@@ -97,4 +97,4 @@ function addSwagger(app: INestApplication, globalPrefix: string): void {
   SwaggerModule.setup(`${globalPrefix}/docs`, app, document);
 }
 
-bootstrap();
+void bootstrap();

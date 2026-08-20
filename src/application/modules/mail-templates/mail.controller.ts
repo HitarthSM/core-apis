@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swa
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ClerkAuthGuard, Roles, RolesGuard } from '../../../common';
 import { ERole } from '../../../infrastructure';
-import { AppMailService } from '../../../common/mail';
+import { AppMailService } from '../../../common';
 import { SendTestMailRequest } from './models';
 
 @ApiBearerAuth()

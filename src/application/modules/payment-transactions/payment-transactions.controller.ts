@@ -3,7 +3,7 @@ import { InjectMapper } from '@automapper/nestjs';
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { ClerkAuthGuard, CqrsMediator, RolesGuard, Roles, AuthenticatedUser, CurrentUser, requireOrganizationId } from '../../../common';
+import { ClerkAuthGuard, CqrsMediator, RolesGuard, Roles, AuthenticatedUser, CurrentUser, requireOrganizationId, assertOrgOwnership } from '../../../common';
 import { IPageable } from '../../../common';
 import { ERole } from '../../../infrastructure';
 import { CreatePaymentTransactionCommand, DeletePaymentTransactionCommand, UpdatePaymentTransactionCommand } from './commands';
@@ -62,10 +62,11 @@ export class PaymentTransactionsController {
   @ApiParam({ name: 'id', description: 'Payment Transaction UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<PaymentTransactionResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user?: AuthenticatedUser): Promise<PaymentTransactionResponse> {
     const query = new GetPaymentTransactionQuery();
     query.id = id;
     const result = await this.mediator.execute<GetPaymentTransactionQuery, PaymentTransaction>(query);
+    assertOrgOwnership(user, result.orgId, 'payment-transaction');
     return this.mapper.map(result, PaymentTransaction, PaymentTransactionResponse);
   }
 
@@ -90,7 +91,9 @@ export class PaymentTransactionsController {
   @UseGuards(RolesGuard)
   @Roles(ERole.OrgAdmin, ERole.SuperAdmin)
   @Put(':id')
-  public async update(@Param('id') id: string, @Body() body: UpdatePaymentTransactionRequest): Promise<PaymentTransactionResponse> {
+  public async update(@Param('id') id: string, @Body() body: UpdatePaymentTransactionRequest, @CurrentUser() user?: AuthenticatedUser): Promise<PaymentTransactionResponse> {
+    const existing = await this.mediator.execute<GetPaymentTransactionQuery, PaymentTransaction>(Object.assign(new GetPaymentTransactionQuery(), { id }));
+    assertOrgOwnership(user, existing.orgId, 'payment-transaction');
     const command = this.mapper.map(body, UpdatePaymentTransactionRequest, UpdatePaymentTransactionCommand);
     command.id    = id;
     const result  = await this.mediator.execute<UpdatePaymentTransactionCommand, PaymentTransaction>(command);

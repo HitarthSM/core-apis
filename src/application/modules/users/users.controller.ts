@@ -3,7 +3,8 @@ import { InjectMapper } from '@automapper/nestjs';
 import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards, ParseEnumPipe } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { ClerkAuthGuard, CqrsMediator, Roles, RolesGuard, AuthenticatedUser, CurrentUser } from '../../../common';
+import { ClerkAuthGuard, CqrsMediator, Roles, RolesGuard, AuthenticatedUser, CurrentUser, assertOrgOwnership } from '../../../common';
+import { resolveInviteOrganizationId } from './commands/invite-user';
 import { ERole } from '../../../infrastructure';
 import {
   AssignUserToOrgCommand,
@@ -102,10 +103,11 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'User UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<UserResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user?: AuthenticatedUser): Promise<UserResponse> {
     const query = new GetUserQuery();
     query.id    = id;
     const result = await this.mediator.execute<GetUserQuery, User>(query);
+    assertOrgOwnership(user, result.organizationId, 'user');
     return this.mapper.map(result, User, UserResponse);
   }
 
@@ -153,8 +155,13 @@ export class UsersController {
   @UseGuards(RolesGuard)
   @Roles(ERole.OrgAdmin, ERole.SuperAdmin)
   @Post('clerk/invite')
-  public async invite(@Body() body: InviteUserRequest): Promise<void> {
+  public async invite(@CurrentUser() currentUser: AuthenticatedUser, @Body() body: InviteUserRequest): Promise<void> {
     const command = this.mapper.map(body, InviteUserRequest, InviteUserCommand);
+    command.organizationId = resolveInviteOrganizationId({
+      callerIsSuperAdmin: currentUser.roles?.includes(ERole.SuperAdmin) ?? false,
+      callerOrganizationId: currentUser.organizationId,
+      requestedOrganizationId: body.organizationId,
+    });
     await this.mediator.execute<InviteUserCommand, void>(command);
   }
 

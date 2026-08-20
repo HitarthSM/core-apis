@@ -29,6 +29,7 @@ import { ReportGenerationLogEntity } from './report-generation-log.entity';
 import { StockEntryEntity } from './stock-entry.entity';
 import { StockTransferEntity } from './stock-transfer.entity';
 import { StockTransferItemEntity } from './stock-transfer-item.entity';
+import { StockTransferRequestEntity } from './stock-transfer-request.entity';
 import { ProductVariantEntity } from './product-variant.entity';
 import { ProductImageEntity } from './product-image.entity';
 import { ProductSupplierEntity } from './product-supplier.entity';
@@ -112,6 +113,7 @@ export * from './report-generation-log.entity';
 export * from './stock-entry.entity';
 export * from './stock-transfer.entity';
 export * from './stock-transfer-item.entity';
+export * from './stock-transfer-request.entity';
 export * from './product-variant.entity';
 export * from './product-image.entity';
 export * from './product-supplier.entity';
@@ -192,6 +194,7 @@ export default [
   StockEntryEntity,
   StockTransferEntity,
   StockTransferItemEntity,
+  StockTransferRequestEntity,
   ProductVariantEntity,
   ProductImageEntity,
   ProductSupplierEntity,

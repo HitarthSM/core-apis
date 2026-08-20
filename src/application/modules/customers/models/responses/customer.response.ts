@@ -16,4 +16,6 @@ export class CustomerResponse {
   @ApiPropertyOptional() @AutoMap() public skipOverLimitApproval?: boolean | null;
   @ApiProperty() @AutoMap(() => Date) public createdAt: Date;
   @ApiPropertyOptional() @AutoMap(() => Date) public updatedAt?: Date;
+  @ApiPropertyOptional({ enum: ['none', 'available', 'warning', 'over'] })
+  public creditStatus?: string;
 }

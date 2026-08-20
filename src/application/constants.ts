@@ -27,6 +27,7 @@ export const INVOICE_REPO                 = 'INVOICE_REPO';
 export const CUSTOMER_REPO                = 'CUSTOMER_REPO';
 export const EXPENSE_REPO                 = 'EXPENSE_REPO';
 export const STOCK_TRANSFER_REPO          = 'STOCK_TRANSFER_REPO';
+export const STOCK_TRANSFER_REQUEST_REPO  = 'STOCK_TRANSFER_REQUEST_REPO';
 export const PLATFORM_REPO                = 'PLATFORM_REPO';
 export const PLATFORM_CONFIGURATION_REPO  = 'PLATFORM_CONFIGURATION_REPO';
 export const PRODUCT_VARIANT_REPO         = 'PRODUCT_VARIANT_REPO';

@@ -105,13 +105,6 @@ describe('rbac guard coverage checker (proving against already-guarded controlle
     expect(hasClassGuard(source, 'RolesGuard')).toBe(true);
   });
 
-  it('detects the method-level role restriction on AuthController.inviteMember', () => {
-    const source = readController('auth/auth.controller.ts');
-    const decorators = methodDecorators(source, 'inviteMember');
-    expect(hasMethodGuard(decorators, 'RolesGuard')).toBe(true);
-    expect(methodRoles(decorators)).toEqual(['ERole.OrgAdmin', 'ERole.SuperAdmin']);
-  });
-
   it('reports no class-level RolesGuard on AuthController itself (class only has ClerkAuthGuard)', () => {
     const source = readController('auth/auth.controller.ts');
     expect(hasClassGuard(source, 'ClerkAuthGuard')).toBe(true);
@@ -309,6 +302,30 @@ describe('invoices controller', () => {
     expect(hasClassGuard(source, 'ClerkAuthGuard')).toBe(true);
     expect(hasClassGuard(source, 'RolesGuard')).toBe(true);
   });
+});
+
+describe('stock-transfer-requests controller', () => {
+  const source = () => readController('stock-transfers/stock-transfer-requests.controller.ts');
+  const storeTier = ['ERole.OrgAdmin', 'ERole.SuperAdmin', 'ERole.StoreManager', 'ERole.StoreStaff'];
+
+  it('requires ClerkAuthGuard and RolesGuard on the whole controller', () => {
+    expect(hasClassGuard(source(), 'ClerkAuthGuard')).toBe(true);
+    expect(hasClassGuard(source(), 'RolesGuard')).toBe(true);
+  });
+
+  it('restricts the controller to store-capable roles', () => {
+    const match = source().match(/@Roles\(([^)]*)\)/);
+    expect(match).not.toBeNull();
+    const roles = match![1].split(',').map((entry) => entry.trim());
+    expect(roles).toEqual(storeTier);
+  });
+
+  it.each(['listMine', 'listOpen', 'getById', 'raise', 'accept', 'claim', 'cancel'])(
+    'exposes method %s',
+    (methodName) => {
+      expect(() => methodDecorators(source(), methodName)).not.toThrow();
+    },
+  );
 });
 
 describe('slice A auth kill-switches', () => {

@@ -34,7 +34,6 @@ import {
   EMovementType,
   ESaleType,
 } from '../../../infrastructure/persistence/entities';
-import { Filter } from '../../../common';
 
 export class CreditLimitExceededError extends BadRequestException {
   public readonly approvalRequestId: string;

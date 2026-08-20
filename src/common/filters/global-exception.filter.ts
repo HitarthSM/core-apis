@@ -24,7 +24,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const body = this.toErrorBody(exception);
 
-    if (body.statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (body.statusCode >= 500) {
       this.logger.error(exception);
     }
 

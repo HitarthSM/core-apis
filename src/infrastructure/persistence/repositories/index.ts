@@ -22,6 +22,7 @@ export * from './report-generation-log.repo';
 export * from './role.repo';
 export * from './stock-movement.repo';
 export * from './stock-transfer.repo';
+export * from './stock-transfer-request.repo';
 export * from './user-role.repo';
 export * from './user.repo';
 export * from './org-member.repo';

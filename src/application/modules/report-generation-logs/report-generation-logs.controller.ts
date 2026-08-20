@@ -3,7 +3,7 @@ import { InjectMapper } from '@automapper/nestjs';
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { ClerkAuthGuard, CqrsMediator, RolesGuard, Roles } from '../../../common';
+import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, RolesGuard, Roles, assertOrgOwnership } from '../../../common';
 import { IPageable } from '../../../common';
 import { ERole } from '../../../infrastructure';
 import { CreateReportLogCommand, DeleteReportLogCommand, UpdateReportLogCommand } from './commands';
@@ -50,10 +50,11 @@ export class ReportGenerationLogsController {
   @ApiParam({ name: 'id', description: 'Report Log UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<ReportGenerationLogResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<ReportGenerationLogResponse> {
     const query = new GetReportLogQuery();
     query.id = id;
     const result = await this.mediator.execute<GetReportLogQuery, ReportGenerationLog>(query);
+    assertOrgOwnership(user, result.orgId, 'Report Generation Log');
     return this.mapper.map(result, ReportGenerationLog, ReportGenerationLogResponse);
   }
 
@@ -72,7 +73,11 @@ export class ReportGenerationLogsController {
   @ApiParam({ name: 'id', description: 'Report Log UUID' })
   @HttpCode(HttpStatus.OK)
   @Put(':id')
-  public async update(@Param('id') id: string, @Body() body: UpdateReportLogRequest): Promise<ReportGenerationLogResponse> {
+  public async update(@Param('id') id: string, @Body() body: UpdateReportLogRequest, @CurrentUser() user: AuthenticatedUser): Promise<ReportGenerationLogResponse> {
+    const fetchQuery = new GetReportLogQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetReportLogQuery, ReportGenerationLog>(fetchQuery);
+    assertOrgOwnership(user, existing.orgId, 'Report Generation Log');
     const command = this.mapper.map(body, UpdateReportLogRequest, UpdateReportLogCommand);
     command.id    = id;
     const result  = await this.mediator.execute<UpdateReportLogCommand, ReportGenerationLog>(command);

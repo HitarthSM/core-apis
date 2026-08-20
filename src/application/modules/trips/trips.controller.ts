@@ -3,12 +3,14 @@ import { InjectMapper } from '@automapper/nestjs';
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard, Roles, requireOrganizationId } from '../../../common';
+import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard, Roles, requireOrganizationId, assertOrgOwnership } from '../../../common';
 import { GetTripQuery, SearchTripsQuery, ListTripsQuery } from './queries';
 import { CreateTripRequest, UpdateTripRequest, SearchTripsRequest, ListTripsRequest, CreateTripResponse, TripsPagedResponse } from './models';
 import { Trip } from './domain';
 import { CreateTripCommand, DeleteTripCommand, UpdateTripCommand } from './commands';
 import { ERole } from '../../../infrastructure';
+import { GetVehicleQuery } from '../vehicles/queries';
+import { Vehicle } from '../vehicles/domain';
 
 @ApiBearerAuth()
 @ApiTags('Trips')
@@ -46,10 +48,14 @@ export class TripsController {
   @ApiParam({ name: 'id', description: 'Trip UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<CreateTripResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<CreateTripResponse> {
     const query  = new GetTripQuery();
     query.id     = id;
     const result = await this.mediator.execute<GetTripQuery, Trip>(query);
+    const vehicleQuery = new GetVehicleQuery();
+    vehicleQuery.id = result.vehicleId;
+    const vehicle = await this.mediator.execute<GetVehicleQuery, Vehicle>(vehicleQuery);
+    assertOrgOwnership(user, vehicle.companyId, 'Trip');
     return this.mapper.map(result, Trip, CreateTripResponse);
   }
 
@@ -72,7 +78,14 @@ export class TripsController {
   @ApiParam({ name: 'id', description: 'Trip UUID' })
   @HttpCode(HttpStatus.OK)
   @Put(':id')
-  public async update(@Param('id') id: string, @Body() body: UpdateTripRequest): Promise<CreateTripResponse> {
+  public async update(@Param('id') id: string, @Body() body: UpdateTripRequest, @CurrentUser() user: AuthenticatedUser): Promise<CreateTripResponse> {
+    const fetchQuery = new GetTripQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetTripQuery, Trip>(fetchQuery);
+    const vehicleQuery = new GetVehicleQuery();
+    vehicleQuery.id = existing.vehicleId;
+    const vehicle = await this.mediator.execute<GetVehicleQuery, Vehicle>(vehicleQuery);
+    assertOrgOwnership(user, vehicle.companyId, 'Trip');
     const command = this.mapper.map(body, UpdateTripRequest, UpdateTripCommand);
     command.id    = id;
     const result  = await this.mediator.execute<UpdateTripCommand, Trip>(command);
