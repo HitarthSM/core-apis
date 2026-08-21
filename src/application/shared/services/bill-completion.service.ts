@@ -178,8 +178,10 @@ export class BillCompletionService {
       );
       if (!inv) throw new BadRequestException(`No inventory found for product ${item.productId} at this location`);
       const qty = Number(item.quantity);
-      const before = Number(inv.quantityOnHand);
       const updated = await this.inventoryRepo.deductStockAsync(inv.id, qty, manager);
+      // Derive "before" from the post-deduction value returned by the same atomic update, not from the
+      // earlier lookup — a concurrent completion on this row would otherwise make the earlier read stale.
+      const quantityAfter = Number(updated.quantityOnHand);
       const movement = Object.assign(new StockMovementInput(), {
         inventoryId: inv.id,
         locationId: bill.locationId,
@@ -189,8 +191,8 @@ export class BillCompletionService {
         referenceType: 'bill',
         movementType: EMovementType.StockOut,
         quantity: qty,
-        quantityBefore: before,
-        quantityAfter: Number(updated.quantityOnHand),
+        quantityBefore: quantityAfter + qty,
+        quantityAfter,
         notes: `Sale ${bill.billNumber}`,
       });
       await this.movementRepo.createWithManagerAsync(movement, manager);

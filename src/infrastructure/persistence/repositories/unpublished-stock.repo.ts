@@ -35,7 +35,7 @@ export class UnpublishedStockRepo
   }
 
   public async addStockAsync(id: string, quantity: number, unitCost: number | undefined, manager: EntityManager): Promise<UnpublishedStock> {
-    const entity = await manager.findOneOrFail(UnpublishedStockEntity, { where: { id } });
+    const entity = await manager.findOneOrFail(UnpublishedStockEntity, { where: { id }, lock: { mode: 'pessimistic_write' } });
     const before = Number(entity.quantityOnHand);
     manager.merge(UnpublishedStockEntity, entity, {
       quantityOnHand: before + quantity,
@@ -46,7 +46,7 @@ export class UnpublishedStockRepo
   }
 
   public async deductStockAsync(id: string, quantity: number, manager: EntityManager): Promise<UnpublishedStock> {
-    const entity = await manager.findOneOrFail(UnpublishedStockEntity, { where: { id } });
+    const entity = await manager.findOneOrFail(UnpublishedStockEntity, { where: { id }, lock: { mode: 'pessimistic_write' } });
     const onHand = Number(entity.quantityOnHand);
     if (quantity > onHand) throw new BadRequestException(`Cannot publish more than available unpublished stock: ${onHand}`);
     manager.merge(UnpublishedStockEntity, entity, { quantityOnHand: onHand - quantity });
