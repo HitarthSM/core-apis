@@ -32,6 +32,7 @@ import {
   ECreditApprovalStatus,
   ECreditTransactionType,
   EMovementType,
+  EPaymentTiming,
   ESaleType,
 } from '../../../infrastructure/persistence/entities';
 
@@ -76,7 +77,7 @@ export class BillCompletionService {
       if (bill.saleType === ESaleType.Black) {
         await this.deductBlackStock(bill, items, performedById, manager);
       } else {
-        await this.deductOfficialStock(bill, items, manager);
+        await this.deductOfficialStock(bill, items, performedById, manager);
       }
     });
 
@@ -93,13 +94,26 @@ export class BillCompletionService {
     return this.billRepo.getAsync(billId);
   }
 
+  /** Amount added to customer creditBalance for this bill (full total, or unpaid remainder on half payment). */
+  private creditChargeAmount(bill: Bill): number {
+    const total = Number(bill.totalAmount);
+    if (bill.paymentTiming === EPaymentTiming.Half && bill.partialAmount != null) {
+      const paid = Number(bill.partialAmount);
+      if (!Number.isNaN(paid) && paid > 0) {
+        return Math.max(0, total - paid);
+      }
+    }
+    return total;
+  }
+
   private async enforceCreditLimit(bill: Bill, requestedById: string): Promise<void> {
     if (!bill.customerId) throw new BadRequestException('Credit sale requires a customer');
     const customer = await this.customerRepo.getAsync(bill.customerId);
     if (!customer) throw new NotFoundException(`Customer ${bill.customerId} not found`);
     if (customer.creditLimit == null) throw new BadRequestException('Customer has no credit limit set');
 
-    const wouldBeBalance = Number(customer.creditBalance) + Number(bill.totalAmount);
+    const charge = this.creditChargeAmount(bill);
+    const wouldBeBalance = Number(customer.creditBalance) + charge;
     if (wouldBeBalance > Number(customer.creditLimit)) {
       if (await this.shouldSkipCreditApproval(bill, customer)) {
         this.logger.info({ billId: bill.id, customerId: customer.id }, 'credit-limit.skip-approval');
@@ -109,7 +123,7 @@ export class BillCompletionService {
         organizationId: bill.organizationId,
         customerId: bill.customerId,
         billId: bill.id,
-        requestedAmount: bill.totalAmount,
+        requestedAmount: charge,
         requestedById,
         status: ECreditApprovalStatus.Pending,
       } as never);
@@ -132,22 +146,29 @@ export class BillCompletionService {
   private async applyCredit(bill: Bill, performedById: string): Promise<void> {
     const customer = await this.customerRepo.getAsync(bill.customerId);
     if (!customer) throw new NotFoundException(`Customer ${bill.customerId} not found`);
+    const charge = this.creditChargeAmount(bill);
+    if (charge <= 0) return;
     const before = Number(customer.creditBalance);
-    const after = before + Number(bill.totalAmount);
+    const after = before + charge;
     customer.creditBalance = after;
     await this.customerRepo.updateAsync(customer);
     await this.creditTxnRepo.createAsync({
       customerId: customer.id,
       billId: bill.id,
       type: ECreditTransactionType.CreditSale,
-      amount: bill.totalAmount,
+      amount: charge,
       balanceBefore: before,
       balanceAfter: after,
       performedById,
     } as never);
   }
 
-  private async deductOfficialStock(bill: Bill, items: BillItem[], manager: EntityManager): Promise<void> {
+  private async deductOfficialStock(
+    bill: Bill,
+    items: BillItem[],
+    performedById: string,
+    manager: EntityManager,
+  ): Promise<void> {
     for (const item of items) {
       const inv = await this.inventoryRepo.findByOrgLocationProductAsync(
         bill.organizationId,
@@ -156,7 +177,23 @@ export class BillCompletionService {
         manager,
       );
       if (!inv) throw new BadRequestException(`No inventory found for product ${item.productId} at this location`);
-      await this.inventoryRepo.deductStockAsync(inv.id, Number(item.quantity), manager);
+      const qty = Number(item.quantity);
+      const before = Number(inv.quantityOnHand);
+      const updated = await this.inventoryRepo.deductStockAsync(inv.id, qty, manager);
+      const movement = Object.assign(new StockMovementInput(), {
+        inventoryId: inv.id,
+        locationId: bill.locationId,
+        productId: item.productId,
+        performedById,
+        referenceId: bill.id,
+        referenceType: 'bill',
+        movementType: EMovementType.StockOut,
+        quantity: qty,
+        quantityBefore: before,
+        quantityAfter: Number(updated.quantityOnHand),
+        notes: `Sale ${bill.billNumber}`,
+      });
+      await this.movementRepo.createWithManagerAsync(movement, manager);
     }
   }
 
