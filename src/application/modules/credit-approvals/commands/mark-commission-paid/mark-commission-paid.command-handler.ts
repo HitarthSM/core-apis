@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
 import { ICommandHandler } from '@nestjs/cqrs';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { CommandHandlerStrict } from '../../../../../common';
+import { CommandHandlerStrict, ResourceNotOwnedByOrgException } from '../../../../../common';
 import { COMMISSION_PAYABLE_REPO } from '../../../../constants';
 import { ECommissionStatus } from '../../../../../infrastructure/persistence/entities/commission-payable.entity';
 import { CommissionPayable } from '../../domain';
@@ -21,6 +21,9 @@ export class MarkCommissionPaidCommandHandler
     this.logger.info(`Executing ${MarkCommissionPaidCommand.name} id=${command.id}`);
     const row = await this.repo.getAsync(command.id);
     if (!row) throw new NotFoundException(`CommissionPayable ${command.id} not found`);
+    if (row.organizationId !== command.organizationId) {
+      throw new ResourceNotOwnedByOrgException('commission-payable');
+    }
     if (row.status === ECommissionStatus.Paid) {
       throw new BadRequestException('Commission is already paid');
     }

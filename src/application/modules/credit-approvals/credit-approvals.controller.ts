@@ -91,6 +91,7 @@ export class CreditApprovalsController {
     const command = new ApproveCreditApprovalCommand();
     command.id = id;
     command.decidedById = user.dbUserId;
+    command.organizationId = requireOrganizationId(user);
     const result = await this.mediator.execute<ApproveCreditApprovalCommand, CreditApprovalRequest>(command);
     return this.mapper.map(result, CreditApprovalRequest, CreditApprovalRequestResponse);
   }
@@ -107,6 +108,7 @@ export class CreditApprovalsController {
     const command = new RejectCreditApprovalCommand();
     command.id = id;
     command.decidedById = user.dbUserId;
+    command.organizationId = requireOrganizationId(user);
     const result = await this.mediator.execute<RejectCreditApprovalCommand, CreditApprovalRequest>(command);
     return this.mapper.map(result, CreditApprovalRequest, CreditApprovalRequestResponse);
   }
@@ -116,9 +118,13 @@ export class CreditApprovalsController {
   @HttpCode(HttpStatus.OK)
   @Post('commissions/:id/mark-paid')
   @Roles(ERole.OrgAdmin, ERole.OrgManager, ERole.SuperAdmin)
-  public async markCommissionPaid(@Param('id') id: string): Promise<CommissionPayableResponse> {
+  public async markCommissionPaid(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CommissionPayableResponse> {
     const command = new MarkCommissionPaidCommand();
     command.id = id;
+    command.organizationId = requireOrganizationId(user);
     const result = await this.mediator.execute<MarkCommissionPaidCommand, CommissionPayable>(command);
     return this.mapper.map(result, CommissionPayable, CommissionPayableResponse);
   }

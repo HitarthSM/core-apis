@@ -1,9 +1,10 @@
 import { Mapper } from '@automapper/core';
 import { InjectMapper } from '@automapper/nestjs';
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard } from '../../../common';
+import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, PdfDocument, RolesGuard, assertOrgOwnership } from '../../../common';
 import {
   AddBillItemCommand,
   CreateBillCommand,
@@ -25,7 +26,7 @@ import {
   UpdateBillItemRequest,
   UpdateBillRequest,
 } from './models';
-import { GetBillQuery, ListBillsQuery, SearchBillsQuery } from './queries';
+import { ExportBillQuery, GetBillQuery, ListBillsQuery, SearchBillsQuery } from './queries';
 
 @ApiBearerAuth()
 @ApiTags('Bills')
@@ -71,11 +72,36 @@ export class BillsController {
   @ApiParam({ name: 'id', description: 'Bill UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<BillResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<BillResponse> {
     const query = new GetBillQuery();
     query.id    = id;
     const result = await this.mediator.execute<GetBillQuery, Bill>(query);
+    assertOrgOwnership(user, result.organizationId, 'Bill');
     return this.mapper.map(result, Bill, BillResponse);
+  }
+
+  @ApiOperation({ summary: 'Export bill as PDF' })
+  @ApiParam({ name: 'id', description: 'Bill UUID' })
+  @HttpCode(HttpStatus.OK)
+  @Get(':id/pdf')
+  public async exportPdf(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    const fetchQuery  = new GetBillQuery();
+    fetchQuery.id     = id;
+    const existing    = await this.mediator.execute<GetBillQuery, Bill>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Bill');
+    const query       = new ExportBillQuery();
+    query.id          = id;
+    const doc: PdfDocument = await this.mediator.execute<ExportBillQuery, PdfDocument>(query);
+    res.set({
+      'Content-Type':        'application/pdf',
+      'Content-Disposition': `attachment; filename="${doc.filename}"`,
+      'Content-Length':      String(doc.buffer.byteLength),
+    });
+    res.end(doc.buffer);
   }
 
   @ApiOperation({ summary: 'Create a new bill with its items' })
@@ -100,7 +126,11 @@ export class BillsController {
   @ApiParam({ name: 'id', description: 'Bill UUID' })
   @HttpCode(HttpStatus.OK)
   @Put(':id')
-  public async update(@Param('id') id: string, @Body() body: UpdateBillRequest): Promise<BillResponse> {
+  public async update(@Param('id') id: string, @Body() body: UpdateBillRequest, @CurrentUser() user: AuthenticatedUser): Promise<BillResponse> {
+    const fetchQuery = new GetBillQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetBillQuery, Bill>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Bill');
     const command = this.mapper.map(body, UpdateBillRequest, UpdateBillCommand);
     command.id    = id;
     const result  = await this.mediator.execute<UpdateBillCommand, Bill>(command);
@@ -112,7 +142,11 @@ export class BillsController {
   @ApiParam({ name: 'id', description: 'Bill UUID' })
   @HttpCode(HttpStatus.OK)
   @Delete(':id')
-  public async delete(@Param('id') id: string): Promise<boolean> {
+  public async delete(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<boolean> {
+    const fetchQuery = new GetBillQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetBillQuery, Bill>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Bill');
     const command = new DeleteBillCommand();
     command.id    = id;
     return this.mediator.execute<DeleteBillCommand, boolean>(command);
@@ -128,6 +162,10 @@ export class BillsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() body: TransitionBillStatusRequest,
   ): Promise<BillResponse> {
+    const fetchQuery = new GetBillQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetBillQuery, Bill>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Bill');
     const command          = new TransitionBillStatusCommand();
     command.id             = id;
     command.status         = body.status;
@@ -142,7 +180,11 @@ export class BillsController {
   @ApiParam({ name: 'id', description: 'Bill UUID' })
   @HttpCode(HttpStatus.CREATED)
   @Post(':id/items')
-  public async addItem(@Param('id') id: string, @Body() body: CreateBillItemRequest): Promise<BillResponse> {
+  public async addItem(@Param('id') id: string, @Body() body: CreateBillItemRequest, @CurrentUser() user: AuthenticatedUser): Promise<BillResponse> {
+    const fetchQuery = new GetBillQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetBillQuery, Bill>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Bill');
     const command          = new AddBillItemCommand();
     command.billId         = id;
     command.productId      = body.productId;
@@ -165,7 +207,12 @@ export class BillsController {
     @Param('id') id: string,
     @Param('itemId') itemId: string,
     @Body() body: UpdateBillItemRequest,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<BillResponse> {
+    const fetchQuery = new GetBillQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetBillQuery, Bill>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Bill');
     const command          = new UpdateBillItemCommand();
     command.billId         = id;
     command.itemId         = itemId;
@@ -185,7 +232,11 @@ export class BillsController {
   @ApiParam({ name: 'itemId', description: 'Bill item UUID' })
   @HttpCode(HttpStatus.OK)
   @Delete(':id/items/:itemId')
-  public async removeItem(@Param('id') id: string, @Param('itemId') itemId: string): Promise<boolean> {
+  public async removeItem(@Param('id') id: string, @Param('itemId') itemId: string, @CurrentUser() user: AuthenticatedUser): Promise<boolean> {
+    const fetchQuery = new GetBillQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetBillQuery, Bill>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Bill');
     const command  = new RemoveBillItemCommand();
     command.billId = id;
     command.itemId = itemId;

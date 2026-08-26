@@ -20,7 +20,7 @@ export class PaymentTransactionEntity {
 
   @AutoMap()
   @Column({ name: 'org_id', type: 'uuid' })
-  public organizationId: string;
+  public orgId: string;
 
   @AutoMap()
   @Column({ name: 'reference_id', type: 'uuid' })

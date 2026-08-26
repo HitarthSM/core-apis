@@ -44,4 +44,10 @@ export class UpdateProductCommand extends CommandBase {
 
   @AutoMap()
   public isActive?: boolean;
+
+  @AutoMap()
+  public manufacturer?: string;
+
+  @AutoMap()
+  public packSize?: number;
 }

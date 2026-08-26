@@ -1,6 +1,6 @@
 import { AutoMap } from '@automapper/classes';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { EProductUnit } from '../../../../../infrastructure';
 
 export class CreateProductRequest {
@@ -81,4 +81,17 @@ export class CreateProductRequest {
   @Min(0)
   @AutoMap()
   public reorderPoint?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @AutoMap()
+  public manufacturer?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @AutoMap()
+  public packSize?: number;
 }

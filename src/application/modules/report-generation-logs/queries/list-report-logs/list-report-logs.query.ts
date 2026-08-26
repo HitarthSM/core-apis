@@ -5,6 +5,7 @@ import { ReportGenerationLogFilter } from '../../domain';
 export class ListReportLogsQuery extends QueryBase implements Filter<ReportGenerationLogFilter> {
   @AutoMap() public orgId?: string;
   @AutoMap() public reportType?: string;
+  @AutoMap() public reportPeriod?: string;
   @AutoMap() public status?: string;
 
   @AutoMap() public $orderBy?: string;

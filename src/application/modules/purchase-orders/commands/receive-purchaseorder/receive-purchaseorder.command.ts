@@ -8,7 +8,6 @@ export class ReceiveItemInput {
 export class ReceivePurchaseOrderCommand extends CommandBase {
   public purchaseOrderId: string;
   public organizationId: string;
-  public locationId: string;
   public items: ReceiveItemInput[];
   public performedById?: string;
   public notes?: string;

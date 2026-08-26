@@ -25,6 +25,8 @@ export class OrganizationsController {
   @ApiOperation({ summary: 'Search organizations (paginated)' })
   @ApiOkResponse({ type: OrganizationsPagedResponse })
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(ERole.SuperAdmin)
   @Get()
   public async search(@Query() filter?: SearchOrganizationsRequest): Promise<OrganizationsPagedResponse> {
     const query = this.mapper.map(filter, SearchOrganizationsRequest, SearchOrganizationsQuery);
@@ -38,6 +40,8 @@ export class OrganizationsController {
   @ApiOperation({ summary: 'List all organizations' })
   @ApiOkResponse({ type: [OrganizationResponse] })
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(ERole.SuperAdmin)
   @Get('list')
   public async list(@Query() filter?: ListOrganizationsRequest): Promise<OrganizationResponse[]> {
     const query = this.mapper.map(filter, ListOrganizationsRequest, ListOrganizationsQuery);
@@ -49,6 +53,8 @@ export class OrganizationsController {
   @ApiOkResponse({ type: OrganizationResponse })
   @ApiParam({ name: 'id', description: 'Organization UUID' })
   @HttpCode(HttpStatus.OK)
+  @UseGuards(RolesGuard)
+  @Roles(ERole.SuperAdmin)
   @Get(':id')
   public async getById(@Param('id') id: string): Promise<OrganizationResponse> {
     const query = new GetOrganizationQuery();

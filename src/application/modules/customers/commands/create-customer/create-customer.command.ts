@@ -8,6 +8,9 @@ export class CreateCustomerCommand extends CommandBase {
   @AutoMap() public email?: string;
   @AutoMap() public phone?: string;
   @AutoMap() public gstin?: string;
+  @AutoMap() public address?: string;
+  @AutoMap() public pinCode?: string;
+  @AutoMap() public shopName?: string;
   @AutoMap() public creditLimit?: number;
   @AutoMap(() => String) public customerType?: ECustomerType;
   @AutoMap() public discountPercent?: number | null;

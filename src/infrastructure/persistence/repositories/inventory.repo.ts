@@ -3,7 +3,7 @@ import { InjectMapper } from '@automapper/nestjs';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, FindManyOptions, Repository } from 'typeorm';
 import { BaseRepo, Filter, PageableFilter } from '../../../common';
 import { InventoryEntity } from '../entities';
 import { Inventory, InventoryFilter, IInventoryRepo } from 'src/application/modules/inventory';
@@ -23,6 +23,16 @@ export class InventoryRepo
 
   public override get idColumnName(): keyof InventoryEntity {
     return 'id';
+  }
+
+  public override async getAsync(pk: string): Promise<Inventory> {
+    const entity = await this.internalRepo.findOne({ where: { id: pk }, relations: { product: true } });
+    if (!entity) return null;
+    return this.mapper.map(entity, InventoryEntity, Inventory);
+  }
+
+  protected override modifyFindOption(findOpts: FindManyOptions<InventoryEntity>): void {
+    findOpts.relations = { product: true };
   }
 
   public async addStockAsync(id: string, quantity: number, unitCost: number | undefined, manager: EntityManager): Promise<Inventory> {

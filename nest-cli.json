@@ -8,6 +8,10 @@
       {
         "include": "infrastructure/persistence/seeds/data/*.json",
         "watchAssets": true
+      },
+      {
+        "include": "common/pdf-export/templates/*.hbs",
+        "watchAssets": true
       }
     ]
   }

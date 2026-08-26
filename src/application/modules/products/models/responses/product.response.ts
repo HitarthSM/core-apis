@@ -65,6 +65,14 @@ export class ProductResponse {
 
   @ApiPropertyOptional()
   @AutoMap()
+  public manufacturer?: string;
+
+  @ApiPropertyOptional()
+  @AutoMap()
+  public packSize?: number;
+
+  @ApiPropertyOptional()
+  @AutoMap()
   public isActive?: boolean;
 
   @ApiPropertyOptional()

@@ -3,7 +3,7 @@ import { InjectMapper } from '@automapper/nestjs';
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard, Roles, requireOrganizationId } from '../../../common';
+import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard, Roles, requireOrganizationId, assertOrgOwnership } from '../../../common';
 import {
   GetVehicleQuery, SearchVehiclesQuery, ListVehiclesQuery,
   ListVehicleTypesQuery, ListVehicleBrandsQuery, ListFuelTypesQuery,
@@ -32,8 +32,9 @@ export class VehiclesController {
   @ApiOkResponse({ type: VehiclesPagedResponse })
   @HttpCode(HttpStatus.OK)
   @Get()
-  public async search(@Query() filter?: SearchVehiclesRequest): Promise<VehiclesPagedResponse> {
+  public async search(@Query() filter?: SearchVehiclesRequest, @CurrentUser() user?: AuthenticatedUser): Promise<VehiclesPagedResponse> {
     const query  = this.mapper.map(filter, SearchVehiclesRequest, SearchVehiclesQuery);
+    query.companyId = requireOrganizationId(user);
     const result = await this.mediator.execute<SearchVehiclesQuery, IPageable<Vehicle>>(query);
     return { ...result, items: this.mapper.mapArray(result.items, Vehicle, VehicleResponse) };
   }
@@ -42,8 +43,9 @@ export class VehiclesController {
   @ApiOkResponse({ type: [VehicleResponse] })
   @HttpCode(HttpStatus.OK)
   @Get('list')
-  public async list(@Query() filter?: ListVehiclesRequest): Promise<VehicleResponse[]> {
+  public async list(@Query() filter?: ListVehiclesRequest, @CurrentUser() user?: AuthenticatedUser): Promise<VehicleResponse[]> {
     const query  = this.mapper.map(filter, ListVehiclesRequest, ListVehiclesQuery);
+    query.companyId = requireOrganizationId(user);
     const result = await this.mediator.execute<ListVehiclesQuery, Vehicle[]>(query);
     return this.mapper.mapArray(result, Vehicle, VehicleResponse);
   }
@@ -53,10 +55,11 @@ export class VehiclesController {
   @ApiParam({ name: 'id', description: 'Vehicle UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<VehicleResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<VehicleResponse> {
     const query  = new GetVehicleQuery();
     query.id     = id;
     const result = await this.mediator.execute<GetVehicleQuery, Vehicle>(query);
+    assertOrgOwnership(user, result.companyId, 'Vehicle');
     return this.mapper.map(result, Vehicle, VehicleResponse);
   }
 
@@ -79,7 +82,11 @@ export class VehiclesController {
   @ApiParam({ name: 'id', description: 'Vehicle UUID' })
   @HttpCode(HttpStatus.OK)
   @Put(':id')
-  public async update(@Param('id') id: string, @Body() body: UpdateVehicleRequest): Promise<VehicleResponse> {
+  public async update(@Param('id') id: string, @Body() body: UpdateVehicleRequest, @CurrentUser() user: AuthenticatedUser): Promise<VehicleResponse> {
+    const fetchQuery = new GetVehicleQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetVehicleQuery, Vehicle>(fetchQuery);
+    assertOrgOwnership(user, existing.companyId, 'Vehicle');
     const command = this.mapper.map(body, UpdateVehicleRequest, UpdateVehicleCommand);
     command.id    = id;
     const result  = await this.mediator.execute<UpdateVehicleCommand, Vehicle>(command);
@@ -93,7 +100,11 @@ export class VehiclesController {
   @UseGuards(RolesGuard)
   @Roles(ERole.StoreManager, ERole.OrgManager, ERole.OrgAdmin, ERole.SuperAdmin)
   @Delete(':id')
-  public async delete(@Param('id') id: string): Promise<boolean> {
+  public async delete(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<boolean> {
+    const fetchQuery = new GetVehicleQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetVehicleQuery, Vehicle>(fetchQuery);
+    assertOrgOwnership(user, existing.companyId, 'Vehicle');
     const command = new DeleteVehicleCommand(id);
     return this.mediator.execute<DeleteVehicleCommand, boolean>(command);
   }

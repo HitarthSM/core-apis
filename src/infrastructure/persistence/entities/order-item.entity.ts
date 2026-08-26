@@ -46,6 +46,16 @@ export class OrderItemEntity {
   @Column({ name: 'line_total', type: 'decimal', precision: 18, scale: 4 })
   public lineTotal: number;
 
+  /** Quantity expressed in packs at sale time; null when sale was entered in raw units */
+  @AutoMap()
+  @Column({ name: 'pack_quantity', type: 'decimal', precision: 18, scale: 4, nullable: true })
+  public packQuantity?: number;
+
+  /** Product packSize snapshotted at time of sale for historical accuracy */
+  @AutoMap()
+  @Column({ name: 'pack_size_snapshot', type: 'integer', nullable: true })
+  public packSizeSnapshot?: number;
+
   // ─── Relations ──────────────────────────────────────────────────────────────
 
   @AutoMap(() => OrderEntity)

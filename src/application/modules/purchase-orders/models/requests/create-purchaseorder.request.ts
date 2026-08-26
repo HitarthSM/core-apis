@@ -10,7 +10,6 @@ export class CreatePurchaseOrderItemRequest {
 }
 
 export class CreatePurchaseOrderRequest {
-  @ApiProperty() @IsNotEmpty() @IsUUID() @AutoMap() public locationId: string;
   @ApiProperty() @IsNotEmpty() @IsUUID() @AutoMap() public supplierId: string;
   @ApiPropertyOptional() @IsOptional() @IsDateString() @AutoMap() public expectedAt?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @AutoMap() public notes?: string;

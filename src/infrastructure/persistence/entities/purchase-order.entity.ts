@@ -11,15 +11,12 @@ import {
 } from 'typeorm';
 import { CORE_SCHEMA, ECoreTableName } from './e-core-table-name';
 import { OrganizationEntity } from './organization.entity';
-import { LocationEntity } from './location.entity';
 import { SupplierEntity } from './supplier.entity';
 import { UserEntity } from './user.entity';
 import { PurchaseItemEntity } from './purchase-item.entity';
-
-const PK_NAME = 'PK_' + ECoreTableName.PurchaseOrders;
-
 import { EPurchaseOrderStatus } from '../../../application/shared/enums';
 
+const PK_NAME = 'PK_' + ECoreTableName.PurchaseOrders;
 
 @Entity({ schema: CORE_SCHEMA, name: ECoreTableName.PurchaseOrders })
 export class PurchaseOrderEntity {
@@ -30,10 +27,6 @@ export class PurchaseOrderEntity {
   @AutoMap()
   @Column({ type: 'uuid' })
   public organizationId: string;
-
-  @AutoMap()
-  @Column({ type: 'uuid' })
-  public locationId: string;
 
   @AutoMap()
   @Column({ type: 'uuid' })
@@ -49,7 +42,11 @@ export class PurchaseOrderEntity {
   public poNumber: string;
 
   @AutoMap(() => String)
-  @Column({ type: 'enum', enum: EPurchaseOrderStatus, default: EPurchaseOrderStatus.Draft })
+  @Column({
+    type: 'enum',
+    enum: EPurchaseOrderStatus,
+    default: EPurchaseOrderStatus.Draft,
+  })
   public status: EPurchaseOrderStatus;
 
   /** Expected delivery date */
@@ -88,15 +85,6 @@ export class PurchaseOrderEntity {
     foreignKeyConstraintName: `FK__${ECoreTableName.PurchaseOrders}__${ECoreTableName.Organizations}`,
   })
   public organization: OrganizationEntity;
-
-  @AutoMap(() => LocationEntity)
-  @ManyToOne(() => LocationEntity)
-  @JoinColumn({
-    name: 'location_id',
-    referencedColumnName: 'id',
-    foreignKeyConstraintName: `FK__${ECoreTableName.PurchaseOrders}__${ECoreTableName.Locations}`,
-  })
-  public location: LocationEntity;
 
   @AutoMap(() => SupplierEntity)
   @ManyToOne(() => SupplierEntity, (sup) => sup.purchaseOrders)

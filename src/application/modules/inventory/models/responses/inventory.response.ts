@@ -15,6 +15,12 @@ export class InventoryResponse {
   @ApiPropertyOptional() @AutoMap() public maxStock?: number;
   @ApiPropertyOptional() @AutoMap() public averageCost?: number;
   @ApiPropertyOptional() @AutoMap() public binLocation?: string;
+  @ApiPropertyOptional({ description: 'Product pack size; null when product has no pack concept' })
+  @AutoMap() public productPackSize?: number;
+  @ApiPropertyOptional({ description: 'Full packs available on hand; null when product has no pack size' })
+  @AutoMap() public packsOnHand?: number;
+  @ApiPropertyOptional({ description: 'Units not fitting into a full pack; null when product has no pack size' })
+  @AutoMap() public looseUnits?: number;
   @ApiPropertyOptional() @AutoMap(() => Date) public createdAt?: Date;
   @ApiPropertyOptional() @AutoMap(() => Date) public updatedAt?: Date;
 }
