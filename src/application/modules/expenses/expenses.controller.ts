@@ -4,7 +4,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query,
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { ParseEnumPipe } from '@nestjs/common';
-import { ClerkAuthGuard, CqrsMediator, RolesGuard, Roles, AuthenticatedUser, CurrentUser, requireOrganizationId } from '../../../common';
+import { ClerkAuthGuard, CqrsMediator, RolesGuard, Roles, AuthenticatedUser, CurrentUser, requireOrganizationId, assertOrgOwnership } from '../../../common';
 import { ERole } from '../../../infrastructure';
 import { CreateExpenseCommand, UpdateExpenseStatusCommand } from './commands';
 import { Expense } from './domain';
@@ -47,7 +47,12 @@ export class ExpensesController {
   public async updateStatus(
     @Param('id') id: string,
     @Body() body: UpdateExpenseStatusRequest,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<ExpenseResponse> {
+    const existingQuery = new GetExpenseQuery();
+    existingQuery.id = id;
+    const existing = await this.mediator.execute<GetExpenseQuery, Expense>(existingQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Expense');
     const command = new UpdateExpenseStatusCommand();
     command.id = id;
     command.status = body.status;
@@ -60,10 +65,11 @@ export class ExpensesController {
   @ApiParam({ name: 'id', description: 'Expense UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<ExpenseResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<ExpenseResponse> {
     const query = new GetExpenseQuery();
     query.id = id;
     const result = await this.mediator.execute<GetExpenseQuery, Expense>(query);
+    assertOrgOwnership(user, result.organizationId, 'Expense');
     return this.mapper.map(result, Expense, ExpenseResponse);
   }
 

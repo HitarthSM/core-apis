@@ -19,7 +19,7 @@ export class PurchaseItemProfile extends AutomapperProfile {
         mapper,
         CreatePurchaseItemCommand,
         PurchaseItem,
-        forMember(dest => dest.totalCost, mapFrom(src => src.quantityOrdered * src.unitCost)),
+        forMember(dest => dest.totalCost, mapFrom(src => (src.quantityOrdered ?? 0) * src.unitCost)),
         forMember(dest => dest.quantityReceived, mapFrom(() => 0)),
       );
       createMap(mapper, PurchaseItem, PurchaseItemResponse);

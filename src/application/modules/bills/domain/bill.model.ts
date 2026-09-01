@@ -17,6 +17,7 @@ export class Bill {
   @AutoMap() public customerId?: string;
   @AutoMap(() => Customer) public customer?: Customer;
   @AutoMap() public createdById?: string;
+  @AutoMap() public sourceOrderId?: string;
   @AutoMap() public walkInName?: string;
   @AutoMap() public walkInPhone?: string;
   @AutoMap() public walkInGstin?: string;

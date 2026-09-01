@@ -2,7 +2,7 @@ import { Inject } from '@nestjs/common';
 import { ICommandHandler, CommandHandler } from '@nestjs/cqrs';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { REPORT_GENERATION_LOG_REPO, IReportGenerationLogRepo } from '../../i-report-generation-log.repo';
-import { ReportGenerationLog } from '../../domain';
+import { EReportType, ReportGenerationLog } from '../../domain';
 import { CreateReportLogCommand } from './create-report-log.command';
 
 @CommandHandler(CreateReportLogCommand)
@@ -16,7 +16,7 @@ export class CreateReportLogCommandHandler implements ICommandHandler<CreateRepo
     this.logger.info(`Executing Command "${CreateReportLogCommand.name}"`);
     const log = new ReportGenerationLog();
     log.orgId = command.orgId;
-    log.reportType = command.reportType;
+    log.reportType = command.reportType as EReportType;
     log.status = command.status || 'PENDING';
     return this.repo.createAsync(log);
   }

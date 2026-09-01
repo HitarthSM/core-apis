@@ -17,6 +17,7 @@ const PK_NAME = 'PK_' + ECoreTableName.UnpublishedStockMovements;
 
 export enum EUnpublishedMovementType {
   StockIn     = 'stock_in',
+  StockOut    = 'stock_out',
   TransferOut = 'transfer_out',
 }
 

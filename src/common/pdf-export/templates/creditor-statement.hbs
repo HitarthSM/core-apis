@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Customer Account Statement</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      color: #123;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .page { padding: 8px 4px; }
+    .brand { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .brand img { height: 42px; }
+    .brand h1 { font-size: 22px; color: #1e4b8e; font-weight: 800; }
+    .meta { color: #555; margin-top: 4px; font-size: 11px; }
+    .title {
+      text-align: center;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      margin: 18px 0 10px;
+    }
+    .wrap { text-align: center; margin-bottom: 16px; }
+    .range {
+      text-align: center;
+      border: 1px solid #1e4b8e;
+      display: inline-block;
+      padding: 4px 12px;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .box { border: 1px solid #c5d4ea; padding: 10px; }
+    .box h2 {
+      margin: 0 0 6px;
+      font-size: 11px;
+      color: #1e4b8e;
+      text-transform: uppercase;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      background: #1e4b8e;
+      color: #fff;
+      text-align: left;
+      padding: 8px;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+    }
+    th.num, td.num { text-align: right; }
+    td { padding: 7px 8px; border-bottom: 1px solid #e6eef8; }
+    tr.alt td { background: #f4f7fb; }
+    .empty { text-align: center; color: #666; padding: 16px; }
+    .foot {
+      margin-top: 16px;
+      background: #e8f0fb;
+      border: 1px solid #c5d4ea;
+      padding: 12px;
+    }
+    .bal { font-size: 18px; font-weight: 800; color: #1e4b8e; margin-top: 4px; }
+    .words { margin-top: 6px; font-style: italic; }
+    .thanks { text-align: center; margin-top: 18px; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="brand">
+      {{#if logoUrl}}<img src="{{logoUrl}}" alt="" />{{/if}}
+      <div>
+        <h1>{{orgName}}</h1>
+        <div class="meta">{{orgMeta}}</div>
+      </div>
+    </div>
+
+    <div class="title">CUSTOMER ACCOUNT STATEMENT</div>
+    <div class="wrap"><div class="range">Statement date: {{statementRange}}</div></div>
+
+    <div class="grid">
+      <div class="box">
+        <h2>Our business</h2>
+        <div>{{orgName}}</div>
+        {{#if orgAddress}}<div>{{orgAddress}}</div>{{/if}}
+        {{#if orgPhone}}<div>{{orgPhone}}</div>{{/if}}
+      </div>
+      <div class="box">
+        <h2>Billed to</h2>
+        <div>{{customerName}}</div>
+        {{#if shopName}}<div>{{shopName}}</div>{{/if}}
+        {{#if customerAddress}}<div>{{customerAddress}}</div>{{/if}}
+        {{#if pinCode}}<div>PIN: {{pinCode}}</div>{{/if}}
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>DATE</th>
+          <th>INV NO</th>
+          <th>DESCRIPTION</th>
+          <th class="num">DEBIT AMOUNT</th>
+          <th class="num">CREDIT AMOUNT</th>
+          <th class="num">BALANCE</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each rows}}
+          <tr class="{{#if alt}}alt{{/if}}">
+            <td>{{date}}</td>
+            <td>{{invNo}}</td>
+            <td>{{description}}</td>
+            <td class="num">{{debit}}</td>
+            <td class="num">{{credit}}</td>
+            <td class="num">{{balance}}</td>
+          </tr>
+        {{else}}
+          <tr><td class="empty" colspan="6">No credit sales or payments in this window.</td></tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <div class="foot">
+      <div>CURRENT BALANCE (AS ON {{asOn}})</div>
+      <div class="bal">{{currentBalance}}</div>
+      <div class="words">{{balanceInWords}}</div>
+    </div>
+    <p class="thanks">Thank you for your continued support and trust in us.</p>
+  </div>
+</body>
+</html>

@@ -2,158 +2,160 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>Bill</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
       background: #fff;
-      color: #1f2937;
-      font-size: 13px;
-      line-height: 1.5;
+      color: #123;
+      font-size: 12px;
+      line-height: 1.45;
     }
-    .page { padding: 36px 40px; max-width: 800px; margin: 0 auto; }
-
-    /* ── Header ── */
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb; }
-    .brand h1 { font-size: 22px; font-weight: 800; color: #1a56db; margin-bottom: 2px; }
-    .brand p  { font-size: 12px; color: #6b7280; }
-    .doc-meta { text-align: right; }
-    .doc-meta .doc-type { font-size: 28px; font-weight: 800; color: #111827; text-transform: uppercase; letter-spacing: 2px; }
-    .doc-meta .bill-number { font-size: 14px; color: #6b7280; margin-top: 4px; }
-    .doc-meta .status-chip {
-      display: inline-block; margin-top: 6px;
-      padding: 3px 12px; border-radius: 20px;
-      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+    .page { padding: 8px 4px; }
+    .brand { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .brand img { height: 42px; }
+    .brand h1 { font-size: 22px; color: #1e4b8e; font-weight: 800; }
+    .meta { color: #555; margin-top: 4px; font-size: 11px; }
+    .title {
+      text-align: center;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      margin: 18px 0 10px;
     }
-    .status-COMPLETED  { background: #d1fae5; color: #065f46; }
-    .status-INITIATED  { background: #dbeafe; color: #1e3a8a; }
-    .status-DRAFT      { background: #f3f4f6; color: #6b7280; }
-    .status-CANCELLED  { background: #fee2e2; color: #7f1d1d; }
-
-    /* ── Info Grid ── */
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
-    .info-card { background: #f9fafb; border-radius: 8px; padding: 16px; }
-    .info-card .card-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #9ca3af; margin-bottom: 8px; font-weight: 600; }
-    .info-card .card-value { font-size: 14px; font-weight: 600; color: #111827; }
-    .info-card .card-sub   { font-size: 12px; color: #6b7280; margin-top: 2px; }
-
-    /* ── Items Table ── */
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    thead tr { background: #1a56db; }
-    thead th {
-      padding: 10px 12px; text-align: left;
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
-      color: #fff; font-weight: 600;
+    .wrap { text-align: center; margin-bottom: 16px; }
+    .range {
+      text-align: center;
+      border: 1px solid #1e4b8e;
+      display: inline-block;
+      padding: 4px 12px;
     }
-    thead th:not(:first-child) { text-align: right; }
-    tbody tr:nth-child(even) { background: #f9fafb; }
-    tbody td { padding: 11px 12px; border-bottom: 1px solid #f3f4f6; font-size: 13px; color: #374151; }
-    tbody td:not(:first-child) { text-align: right; }
-    tfoot td { padding: 8px 12px; }
-
-    /* ── Totals ── */
-    .totals { width: 260px; margin-left: auto; }
-    .totals-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; color: #6b7280; border-bottom: 1px dashed #e5e7eb; }
-    .totals-row:last-child { border-bottom: none; padding-top: 10px; font-size: 16px; font-weight: 800; color: #111827; }
-    .totals-row .label { color: inherit; }
-
-    /* ── Footer ── */
-    .footer-section { margin-top: 32px; display: flex; justify-content: space-between; align-items: flex-end; }
-    .notes-box { max-width: 320px; }
-    .notes-box .notes-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #9ca3af; margin-bottom: 6px; font-weight: 600; }
-    .notes-box p { font-size: 12px; color: #6b7280; }
-    .payment-info { text-align: right; }
-    .payment-method { display: inline-block; padding: 6px 14px; background: #f3f4f6; border-radius: 6px; font-size: 12px; font-weight: 600; color: #374151; }
-    .page-footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 11px; color: #9ca3af; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .box { border: 1px solid #c5d4ea; padding: 10px; }
+    .box h2 {
+      margin: 0 0 6px;
+      font-size: 11px;
+      color: #1e4b8e;
+      text-transform: uppercase;
+    }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    th {
+      background: #1e4b8e;
+      color: #fff;
+      text-align: left;
+      padding: 8px;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+    }
+    th.num, td.num { text-align: right; }
+    td { padding: 7px 8px; border-bottom: 1px solid #e6eef8; }
+    tbody tr:nth-child(even) td { background: #f4f7fb; }
+    .item-desc { font-size: 10px; color: #666; margin-top: 2px; }
+    .empty { text-align: center; color: #666; padding: 16px; }
+    .foot {
+      margin-top: 16px;
+      background: #e8f0fb;
+      border: 1px solid #c5d4ea;
+      padding: 12px;
+    }
+    .foot-row { display: flex; justify-content: space-between; padding: 4px 0; }
+    .foot-row.total { margin-top: 6px; padding-top: 8px; border-top: 1px solid #c5d4ea; }
+    .bal { font-size: 18px; font-weight: 800; color: #1e4b8e; }
+    .extra { margin-top: 12px; }
+    .extra-label {
+      font-size: 10px;
+      color: #1e4b8e;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+    .thanks { text-align: center; margin-top: 18px; color: #555; }
   </style>
 </head>
 <body>
   <div class="page">
-
-    <!-- Header -->
-    <div class="header">
-      <div class="brand">
-        <h1>{{organizationName}}</h1>
-        <p>{{organizationAddress}}</p>
-        <p>{{organizationEmail}}</p>
-      </div>
-      <div class="doc-meta">
-        <div class="doc-type">Bill</div>
-        <div class="bill-number">#{{billNumber}}</div>
-        <span class="status-chip status-{{status}}">{{status}}</span>
+    <div class="brand">
+      {{#if logoUrl}}<img src="{{logoUrl}}" alt="" />{{/if}}
+      <div>
+        <h1>{{orgName}}</h1>
+        <div class="meta">{{orgMeta}}</div>
       </div>
     </div>
 
-    <!-- Info Cards -->
-    <div class="info-grid">
-      <div class="info-card">
-        <div class="card-label">Bill To</div>
-        <div class="card-value">{{customerName}}</div>
-        <div class="card-sub">{{customerPhone}}</div>
-        <div class="card-sub">{{customerEmail}}</div>
+    <div class="title">BILL</div>
+    <div class="wrap"><div class="range">#{{billNumber}} · {{billedAt}} · {{status}}</div></div>
+
+    <div class="grid">
+      <div class="box">
+        <h2>Our business</h2>
+        <div>{{orgName}}</div>
+        {{#if orgAddress}}<div>{{orgAddress}}</div>{{/if}}
+        {{#if orgPhone}}<div>{{orgPhone}}</div>{{/if}}
+        {{#if orgEmail}}<div>{{orgEmail}}</div>{{/if}}
       </div>
-      <div class="info-card">
-        <div class="card-label">Bill Details</div>
-        <div class="card-sub">Date&emsp;<strong>{{billedAt}}</strong></div>
-        <div class="card-sub">Location&emsp;<strong>{{location}}</strong></div>
-        <div class="card-sub">Created by&emsp;<strong>{{createdBy}}</strong></div>
+      <div class="box">
+        <h2>Billed to</h2>
+        <div>{{customerName}}</div>
+        {{#if customerPhone}}<div>{{customerPhone}}</div>{{/if}}
+        {{#if customerEmail}}<div>{{customerEmail}}</div>{{/if}}
+        <div>Location: {{location}}</div>
+        <div>Created by: {{createdBy}}</div>
       </div>
     </div>
 
-    <!-- Line Items -->
     <table>
       <thead>
         <tr>
-          <th style="width:40%">Item / Description</th>
-          <th>HSN / SKU</th>
-          <th>Qty</th>
-          <th>Unit Price</th>
-          <th>Tax %</th>
-          <th>Total</th>
+          <th>ITEM</th>
+          <th>HSN/SKU</th>
+          <th class="num">QTY</th>
+          <th class="num">UNIT PRICE</th>
+          <th class="num">TAX %</th>
+          <th class="num">TOTAL</th>
         </tr>
       </thead>
       <tbody>
         {{#each items}}
-        <tr>
-          <td><strong>{{this.name}}</strong><br/><span style="font-size:11px;color:#9ca3af">{{this.description}}</span></td>
-          <td>{{this.sku}}</td>
-          <td>{{this.quantity}}</td>
-          <td>{{this.unitPrice}}</td>
-          <td>{{this.taxRate}}%</td>
-          <td><strong>{{this.total}}</strong></td>
-        </tr>
+          <tr>
+            <td>
+              <div>{{this.name}}</div>
+              {{#if this.description}}<div class="item-desc">{{this.description}}</div>{{/if}}
+            </td>
+            <td>{{this.sku}}</td>
+            <td class="num">{{this.quantity}}</td>
+            <td class="num">{{this.unitPrice}}</td>
+            <td class="num">{{this.taxRate}}%</td>
+            <td class="num">{{this.total}}</td>
+          </tr>
+        {{else}}
+          <tr><td class="empty" colspan="6">No line items on this bill.</td></tr>
         {{/each}}
       </tbody>
     </table>
 
-    <!-- Totals -->
-    <div class="totals">
-      <div class="totals-row"><span class="label">Subtotal</span><span>{{subtotal}}</span></div>
-      <div class="totals-row"><span class="label">Tax Amount</span><span>{{taxAmount}}</span></div>
-      <div class="totals-row"><span class="label">Discount</span><span>- {{discountAmount}}</span></div>
-      <div class="totals-row"><span class="label">Total</span><span style="color:#1a56db">{{totalAmount}}</span></div>
+    <div class="foot">
+      <div class="foot-row"><span>Subtotal</span><span>{{subtotal}}</span></div>
+      <div class="foot-row"><span>Tax</span><span>{{taxAmount}}</span></div>
+      <div class="foot-row"><span>Discount</span><span>- {{discountAmount}}</span></div>
+      <div class="foot-row total"><span>Total</span><span class="bal">{{totalAmount}}</span></div>
     </div>
 
-    <!-- Footer Section -->
-    <div class="footer-section">
-      {{#if notes}}
-      <div class="notes-box">
-        <div class="notes-label">Notes</div>
-        <p>{{notes}}</p>
-      </div>
-      {{/if}}
-      <div class="payment-info">
-        {{#if paymentMethod}}
-        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">Payment Method</div>
-        <div class="payment-method">{{paymentMethod}}</div>
-        {{/if}}
-      </div>
+    {{#if paymentMethod}}
+    <div class="extra">
+      <div class="extra-label">Payment method</div>
+      <div>{{paymentMethod}}</div>
     </div>
+    {{/if}}
 
-    <div class="page-footer">
-      Thank you for your business &bull; {{organizationName}} &bull; Generated on {{generatedAt}}
+    {{#if notes}}
+    <div class="extra">
+      <div class="extra-label">Notes</div>
+      <div>{{notes}}</div>
     </div>
+    {{/if}}
 
+    <p class="thanks">Thank you for your business · {{orgName}} · Generated {{generatedAt}}</p>
   </div>
 </body>
 </html>

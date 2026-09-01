@@ -28,8 +28,10 @@ export enum ECoreTableName {
   StockEntries          = 'stock_entries',
   StockTransfers        = 'stock_transfers',
   StockTransferItems    = 'stock_transfer_items',
-  PurchaseOrders        = 'purchase_orders',
-  PurchaseItems         = 'purchase_items',
+  StockTransferRequests = 'stock_transfer_requests',
+  PurchaseOrders            = 'purchase_orders',
+  PurchaseItems             = 'purchase_items',
+  PurchaseItemAllocations   = 'purchase_item_allocations',
   Customers             = 'customers',
   Orders                = 'orders',
   OrderItems            = 'order_items',
@@ -88,4 +90,8 @@ export enum ECoreTableName {
 
   // ─── Communication ────────────────────────────────────────────────────────────
   EmailTemplates        = 'email_templates',
+
+  // ─── Field App ───────────────────────────────────────────────────────────────
+  TripStops             = 'trip_stops',
+  UserDeviceTokens      = 'user_device_tokens',
 }

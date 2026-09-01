@@ -45,10 +45,21 @@ export class UnpublishedStockRepo
     return this.mapper.map(entity, UnpublishedStockEntity, UnpublishedStock);
   }
 
+  public async findByOrgLocationProductAsync(
+    organizationId: string,
+    locationId: string,
+    productId: string,
+    manager?: EntityManager,
+  ): Promise<UnpublishedStock | null> {
+    const repo = manager ? manager.getRepository(UnpublishedStockEntity) : this.internalRepo;
+    const entity = await repo.findOne({ where: { organizationId, locationId, productId } });
+    return entity ? this.mapper.map(entity, UnpublishedStockEntity, UnpublishedStock) : null;
+  }
+
   public async deductStockAsync(id: string, quantity: number, manager: EntityManager): Promise<UnpublishedStock> {
     const entity = await manager.findOneOrFail(UnpublishedStockEntity, { where: { id } });
     const onHand = Number(entity.quantityOnHand);
-    if (quantity > onHand) throw new BadRequestException(`Cannot publish more than available unpublished stock: ${onHand}`);
+    if (quantity > onHand) throw new BadRequestException(`Insufficient unpublished stock. Available: ${onHand}`);
     manager.merge(UnpublishedStockEntity, entity, { quantityOnHand: onHand - quantity });
     await manager.save(UnpublishedStockEntity, entity);
     return this.mapper.map(entity, UnpublishedStockEntity, UnpublishedStock);

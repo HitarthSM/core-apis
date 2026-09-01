@@ -1,6 +1,6 @@
 import { AutoMap } from '@automapper/classes';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { EProductUnit } from '../../../../../infrastructure';
 
 export class UpdateProductRequest {
@@ -87,4 +87,17 @@ export class UpdateProductRequest {
   @IsBoolean()
   @AutoMap()
   public isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @AutoMap()
+  public manufacturer?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @AutoMap()
+  public packSize?: number;
 }

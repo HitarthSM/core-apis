@@ -6,10 +6,13 @@ import { DataSource } from 'typeorm';
 import { BaseSeed } from '../../../common';
 import { ERole, RoleEntity } from '../entities';
 
+
+const VERSION = 2;
+
 @Injectable()
 export class RolesSeed extends BaseSeed<RoleEntity> {
   public get version(): number {
-    return 1;
+    return VERSION;
   }
 
   public get seedingData(): Partial<RoleEntity>[] {
@@ -19,6 +22,8 @@ export class RolesSeed extends BaseSeed<RoleEntity> {
       { name: ERole.OrgManager,   description: 'Equal authority to Org Admin for approvals, black sales, and black inventory' },
       { name: ERole.StoreManager, description: 'Manage a specific store and its inventory' },
       { name: ERole.StoreStaff,   description: 'Day-to-day stock operations within a store' },
+      { name: ERole.Picker,       description: 'Warehouse picker — claims and packs orders for dispatch' },
+      { name: ERole.Driver,       description: 'Delivery driver — manages trips and confirms deliveries' },
     ];
   }
 

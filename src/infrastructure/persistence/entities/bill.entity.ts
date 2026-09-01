@@ -81,6 +81,11 @@ export class BillEntity {
   @Column({ name: 'created_by_id', type: 'uuid', nullable: true })
   public createdById?: string;
 
+  /** Link to the sales order that auto-created this bill, if any. */
+  @AutoMap()
+  @Column({ name: 'source_order_id', type: 'uuid', nullable: true })
+  public sourceOrderId?: string;
+
   @AutoMap()
   @Column({ name: 'walk_in_name', type: 'varchar', length: 255, nullable: true })
   public walkInName?: string;

@@ -13,7 +13,11 @@ type ErrorBody = {
   statusCode: number;
   message: string;
   errors?: unknown;
+  approvalRequestId?: string;
+  [key: string]: unknown;
 };
+
+const RESERVED_ERROR_KEYS = new Set(['statusCode', 'message', 'errors', 'error']);
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -24,7 +28,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const body = this.toErrorBody(exception);
 
-    if (body.statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (body.statusCode >= 500) {
       this.logger.error(exception);
     }
 
@@ -45,6 +49,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         statusCode,
         message,
         ...(errors !== undefined ? { errors } : {}),
+        ...this.extractExtraFields(raw),
       };
     }
 
@@ -59,5 +64,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Something went wrong',
     };
+  }
+
+  /** Preserve structured fields (e.g. approvalRequestId) alongside the flattened message. */
+  private extractExtraFields(raw: string | object): Record<string, unknown> {
+    if (typeof raw !== 'object' || raw === null) return {};
+    const extras: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (RESERVED_ERROR_KEYS.has(key) || value === undefined) continue;
+      extras[key] = value;
+    }
+    return extras;
   }
 }

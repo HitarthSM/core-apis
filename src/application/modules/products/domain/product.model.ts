@@ -48,6 +48,12 @@ export class Product {
   public reorderPoint?: number;
 
   @AutoMap()
+  public manufacturer?: string;
+
+  @AutoMap()
+  public packSize?: number;
+
+  @AutoMap()
   public isActive?: boolean;
 
   @AutoMap(() => Date)

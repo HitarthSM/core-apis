@@ -7,10 +7,10 @@ import { CommandHandlerStrict } from '../../../../../common';
 import { EBillStatus, ERole, ESaleType } from '../../../../../infrastructure/persistence/entities';
 import { BILL_REPO, PRODUCT_REPO } from '../../../../constants';
 import { IProductRepo } from '../../../products';
-import { Bill } from '../../domain';
+import { Bill, BillItem } from '../../domain';
 import { applyBillTotals, generateBillNumber } from '../../helpers';
 import { IBillRepo } from '../..';
-import { CreateBillCommand } from './create-bill.command';
+import { CreateBillCommand, CreateBillItemCommand } from './create-bill.command';
 
 const BLACK_SALE_ROLES = new Set([ERole.OrgAdmin, ERole.OrgManager, ERole.SuperAdmin]);
 
@@ -32,6 +32,9 @@ export class CreateBillCommandHandler implements ICommandHandler<CreateBillComma
     }
 
     const bill = this.mapper.map(command, CreateBillCommand, Bill);
+    // CreateBillCommand → Bill ignores items (see bill.profile); map them explicitly
+    // so POS create-with-basket persists line items and header totals.
+    bill.items = this.mapper.mapArray(command.items ?? [], CreateBillItemCommand, BillItem);
     bill.saleType         = saleType;
     bill.blackAmount      = 0;
     bill.commissionAmount = 0;

@@ -3,12 +3,14 @@ import { InjectMapper } from '@automapper/nestjs';
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard, Roles, requireOrganizationId } from '../../../common';
+import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard, Roles, requireOrganizationId, assertOrgOwnership } from '../../../common';
 import { GetTripQuery, SearchTripsQuery, ListTripsQuery } from './queries';
 import { CreateTripRequest, UpdateTripRequest, SearchTripsRequest, ListTripsRequest, CreateTripResponse, TripsPagedResponse } from './models';
 import { Trip } from './domain';
 import { CreateTripCommand, DeleteTripCommand, UpdateTripCommand } from './commands';
 import { ERole } from '../../../infrastructure';
+import { GetVehicleQuery, ListVehiclesQuery } from '../vehicles/queries';
+import { Vehicle } from '../vehicles/domain';
 
 @ApiBearerAuth()
 @ApiTags('Trips')
@@ -25,20 +27,33 @@ export class TripsController {
   @ApiOkResponse({ type: TripsPagedResponse })
   @HttpCode(HttpStatus.OK)
   @Get()
-  public async search(@Query() filter?: SearchTripsRequest): Promise<TripsPagedResponse> {
+  public async search(@Query() filter?: SearchTripsRequest, @CurrentUser() user?: AuthenticatedUser): Promise<TripsPagedResponse> {
     const query  = this.mapper.map(filter, SearchTripsRequest, SearchTripsQuery);
     const result = await this.mediator.execute<SearchTripsQuery, IPageable<Trip>>(query);
-    return { ...result, items: this.mapper.mapArray(result.items, Trip, CreateTripResponse) };
+    const orgVehicleIds = await this.orgVehicleIds(user);
+    const items = result.items.filter((t) => orgVehicleIds.has(t.vehicleId));
+    return { ...result, items: this.mapper.mapArray(items, Trip, CreateTripResponse) };
   }
 
   @ApiOperation({ summary: 'List all trips' })
   @ApiOkResponse({ type: [CreateTripResponse] })
   @HttpCode(HttpStatus.OK)
   @Get('list')
-  public async list(@Query() filter?: ListTripsRequest): Promise<CreateTripResponse[]> {
+  public async list(@Query() filter?: ListTripsRequest, @CurrentUser() user?: AuthenticatedUser): Promise<CreateTripResponse[]> {
     const query  = this.mapper.map(filter, ListTripsRequest, ListTripsQuery);
     const result = await this.mediator.execute<ListTripsQuery, Trip[]>(query);
-    return this.mapper.mapArray(result, Trip, CreateTripResponse);
+    const orgVehicleIds = await this.orgVehicleIds(user);
+    return this.mapper.mapArray(result.filter((t) => orgVehicleIds.has(t.vehicleId)), Trip, CreateTripResponse);
+  }
+
+  // ponytail: filters cross-org rows out in memory after fetch, since Trip carries no
+  // organizationId column to push the check down to the DB (only vehicleId -> vehicle.companyId).
+  // Upgrade to a DB-level join filter if trip volume makes the unfiltered fetch/search-count too slow.
+  private async orgVehicleIds(user?: AuthenticatedUser): Promise<Set<string>> {
+    const vehiclesQuery = new ListVehiclesQuery();
+    vehiclesQuery.companyId = requireOrganizationId(user);
+    const vehicles = await this.mediator.execute<ListVehiclesQuery, Vehicle[]>(vehiclesQuery);
+    return new Set(vehicles.map((v) => v.id));
   }
 
   @ApiOperation({ summary: 'Get trip by ID' })
@@ -46,10 +61,14 @@ export class TripsController {
   @ApiParam({ name: 'id', description: 'Trip UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<CreateTripResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<CreateTripResponse> {
     const query  = new GetTripQuery();
     query.id     = id;
     const result = await this.mediator.execute<GetTripQuery, Trip>(query);
+    const vehicleQuery = new GetVehicleQuery();
+    vehicleQuery.id = result.vehicleId;
+    const vehicle = await this.mediator.execute<GetVehicleQuery, Vehicle>(vehicleQuery);
+    assertOrgOwnership(user, vehicle.companyId, 'Trip');
     return this.mapper.map(result, Trip, CreateTripResponse);
   }
 
@@ -72,7 +91,14 @@ export class TripsController {
   @ApiParam({ name: 'id', description: 'Trip UUID' })
   @HttpCode(HttpStatus.OK)
   @Put(':id')
-  public async update(@Param('id') id: string, @Body() body: UpdateTripRequest): Promise<CreateTripResponse> {
+  public async update(@Param('id') id: string, @Body() body: UpdateTripRequest, @CurrentUser() user: AuthenticatedUser): Promise<CreateTripResponse> {
+    const fetchQuery = new GetTripQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetTripQuery, Trip>(fetchQuery);
+    const vehicleQuery = new GetVehicleQuery();
+    vehicleQuery.id = existing.vehicleId;
+    const vehicle = await this.mediator.execute<GetVehicleQuery, Vehicle>(vehicleQuery);
+    assertOrgOwnership(user, vehicle.companyId, 'Trip');
     const command = this.mapper.map(body, UpdateTripRequest, UpdateTripCommand);
     command.id    = id;
     const result  = await this.mediator.execute<UpdateTripCommand, Trip>(command);
@@ -86,7 +112,14 @@ export class TripsController {
   @UseGuards(RolesGuard)
   @Roles(ERole.StoreManager, ERole.OrgManager, ERole.OrgAdmin, ERole.SuperAdmin)
   @Delete(':id')
-  public async delete(@Param('id') id: string): Promise<boolean> {
+  public async delete(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<boolean> {
+    const fetchQuery = new GetTripQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetTripQuery, Trip>(fetchQuery);
+    const vehicleQuery = new GetVehicleQuery();
+    vehicleQuery.id = existing.vehicleId;
+    const vehicle = await this.mediator.execute<GetVehicleQuery, Vehicle>(vehicleQuery);
+    assertOrgOwnership(user, vehicle.companyId, 'Trip');
     const command = new DeleteTripCommand(id);
     return this.mediator.execute<DeleteTripCommand, boolean>(command);
   }

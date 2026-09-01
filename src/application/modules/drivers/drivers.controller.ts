@@ -3,7 +3,7 @@ import { InjectMapper } from '@automapper/nestjs';
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard, Roles, requireOrganizationId } from '../../../common';
+import { AuthenticatedUser, ClerkAuthGuard, CqrsMediator, CurrentUser, IPageable, RolesGuard, Roles, requireOrganizationId, assertOrgOwnership } from '../../../common';
 import { CreateDriverRequest, UpdateDriverRequest, SearchDriversRequest, ListDriversRequest, DriverResponse, DriversPagedResponse } from './models';
 import { Driver } from './domain';
 import { GetDriverQuery, SearchDriversQuery, ListDriversQuery } from './queries';
@@ -25,8 +25,9 @@ export class DriversController {
   @ApiOkResponse({ type: DriversPagedResponse })
   @HttpCode(HttpStatus.OK)
   @Get()
-  public async search(@Query() filter?: SearchDriversRequest): Promise<DriversPagedResponse> {
+  public async search(@Query() filter?: SearchDriversRequest, @CurrentUser() user?: AuthenticatedUser): Promise<DriversPagedResponse> {
     const query  = this.mapper.map(filter, SearchDriversRequest, SearchDriversQuery);
+    query.organizationId = requireOrganizationId(user);
     const result = await this.mediator.execute<SearchDriversQuery, IPageable<Driver>>(query);
     return { ...result, items: this.mapper.mapArray(result.items, Driver, DriverResponse) };
   }
@@ -35,8 +36,9 @@ export class DriversController {
   @ApiOkResponse({ type: [DriverResponse] })
   @HttpCode(HttpStatus.OK)
   @Get('list')
-  public async list(@Query() filter?: ListDriversRequest): Promise<DriverResponse[]> {
+  public async list(@Query() filter?: ListDriversRequest, @CurrentUser() user?: AuthenticatedUser): Promise<DriverResponse[]> {
     const query  = this.mapper.map(filter, ListDriversRequest, ListDriversQuery);
+    query.organizationId = requireOrganizationId(user);
     const result = await this.mediator.execute<ListDriversQuery, Driver[]>(query);
     return this.mapper.mapArray(result, Driver, DriverResponse);
   }
@@ -46,10 +48,11 @@ export class DriversController {
   @ApiParam({ name: 'id', description: 'Driver UUID' })
   @HttpCode(HttpStatus.OK)
   @Get(':id')
-  public async getById(@Param('id') id: string): Promise<DriverResponse> {
+  public async getById(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<DriverResponse> {
     const query  = new GetDriverQuery();
     query.id     = id;
     const result = await this.mediator.execute<GetDriverQuery, Driver>(query);
+    assertOrgOwnership(user, result.organizationId, 'Driver');
     return this.mapper.map(result, Driver, DriverResponse);
   }
 
@@ -72,7 +75,11 @@ export class DriversController {
   @ApiParam({ name: 'id', description: 'Driver UUID' })
   @HttpCode(HttpStatus.OK)
   @Put(':id')
-  public async update(@Param('id') id: string, @Body() body: UpdateDriverRequest): Promise<DriverResponse> {
+  public async update(@Param('id') id: string, @Body() body: UpdateDriverRequest, @CurrentUser() user: AuthenticatedUser): Promise<DriverResponse> {
+    const fetchQuery = new GetDriverQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetDriverQuery, Driver>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Driver');
     const command = this.mapper.map(body, UpdateDriverRequest, UpdateDriverCommand);
     command.id    = id;
     const result  = await this.mediator.execute<UpdateDriverCommand, Driver>(command);
@@ -86,7 +93,11 @@ export class DriversController {
   @UseGuards(RolesGuard)
   @Roles(ERole.StoreManager, ERole.OrgManager, ERole.OrgAdmin, ERole.SuperAdmin)
   @Delete(':id')
-  public async delete(@Param('id') id: string): Promise<boolean> {
+  public async delete(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser): Promise<boolean> {
+    const fetchQuery = new GetDriverQuery();
+    fetchQuery.id = id;
+    const existing = await this.mediator.execute<GetDriverQuery, Driver>(fetchQuery);
+    assertOrgOwnership(user, existing.organizationId, 'Driver');
     const command = new DeleteDriverCommand();
     command.id    = id;
     return this.mediator.execute<DeleteDriverCommand, boolean>(command);

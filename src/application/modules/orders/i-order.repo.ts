@@ -3,4 +3,7 @@ import { Order } from './domain';
 
 export type OrderFilter = Record<string, never>;
 
-export type IOrderRepo = IBaseRepo<Order, string, PageableFilter<OrderFilter>, Filter<OrderFilter>>;
+export interface IOrderRepo extends IBaseRepo<Order, string, PageableFilter<OrderFilter>, Filter<OrderFilter>> {
+  claimAsync(orderId: string, pickerUserId: string): Promise<Order>;
+  findQueueAsync(locationId: string): Promise<Order[]>;
+}

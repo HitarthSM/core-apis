@@ -34,6 +34,18 @@ export class CustomerEntity {
   public gstin?: string;
 
   @AutoMap()
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  public address?: string;
+
+  @AutoMap()
+  @Column({ name: 'pin_code', type: 'varchar', length: 20, nullable: true })
+  public pinCode?: string;
+
+  @AutoMap()
+  @Column({ name: 'shop_name', type: 'varchar', length: 255, nullable: true })
+  public shopName?: string;
+
+  @AutoMap()
   @Column({ name: 'credit_limit', type: 'decimal', precision: 18, scale: 4, nullable: true, transformer: numericTransformer })
   public creditLimit?: number;
 

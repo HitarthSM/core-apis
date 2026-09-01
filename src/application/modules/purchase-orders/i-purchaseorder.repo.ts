@@ -5,12 +5,10 @@ import { EPurchaseOrderStatus } from 'src/application/shared/enums';
 
 export interface PurchaseOrderFilter {
   organizationId?: string;
-  locationId?: string;
   supplierId?: string;
   status?: EPurchaseOrderStatus;
 }
 
 export const PURCHASE_ORDER_REPO = 'PURCHASE_ORDER_REPO';
 
-export interface IPurchaseOrderRepo extends IBaseRepo<PurchaseOrder, string, PageableFilter<PurchaseOrderFilter>, Filter<PurchaseOrderFilter>> {
-}
+export type IPurchaseOrderRepo = IBaseRepo<PurchaseOrder, string, PageableFilter<PurchaseOrderFilter>, Filter<PurchaseOrderFilter>>;

@@ -18,27 +18,30 @@ import {
   isDev,
   isLocal,
   isTest,
-  Roles,
-  RolesGuard,
 } from '../../../common';
-import { ERole } from '../../../infrastructure';
 import { SyncUserCommand } from './commands/sync-user';
 import { OnboardOrganizationCommand, OnboardOrganizationResult } from './commands/onboard-organization';
-import { InviteMemberCommand } from './commands/invite-member';
+import { RegisterMobileUserCommand } from './commands/register-mobile-user';
 import { GetMeQuery, MeResult } from './queries/get-me';
 import { GetTokenQuery } from './queries/get-token';
+import { GetDevTokenQuery } from './queries/get-dev-token';
 import {
   GetTokenRequest,
-  InviteMemberRequest,
+  GetDevTokenRequest,
   OnboardOrganizationRequest,
+  MobileLoginRequest,
+  RegisterMobileUserRequest,
   MeResponse,
   SyncUserResponse,
   OnboardOrganizationResponse,
-  InviteMemberResponse,
   TokenResponse,
   OrganizationSummary,
   MembershipSummary,
 } from './models';
+import { ListOrganizationsQuery } from '../organizations/queries';
+import { Organization } from '../organizations/domain';
+import { ListRolesQuery } from '../roles/queries';
+import { Role } from '../roles/domain';
 import { User } from '../users/domain';
 
 @ApiBearerAuth()
@@ -68,6 +71,43 @@ export class AuthController {
     const query   = new GetTokenQuery();
     query.userId  = body.userId;
     const token = await this.mediator.execute<GetTokenQuery, string>(query);
+    return { token };
+  }
+
+  // ── POST /auth/dev-login (dev/local/test only) ──────────────────────────────
+  @ApiOperation({
+    summary: 'Sign in with email + password and get a JWT (development only)',
+    description: 'Creates a Clerk session for the user and returns a signed JWT. Disabled in production.',
+  })
+  @ApiCreatedResponse({ type: TokenResponse })
+  @HttpCode(HttpStatus.CREATED)
+  @AllowAnonymous()
+  @Post('dev-login')
+  public async devLogin(@Body() body: GetDevTokenRequest): Promise<TokenResponse> {
+    if (!isDev() && !isLocal() && !isTest()) {
+      throw new ForbiddenException('Dev login is disabled outside development');
+    }
+    const query    = new GetDevTokenQuery();
+    query.email    = body.email;
+    query.password = body.password;
+    const token = await this.mediator.execute<GetDevTokenQuery, string>(query);
+    return { token };
+  }
+
+  // ── POST /auth/login (mobile — Clerk email+password) ───────────────────────
+  @ApiOperation({
+    summary: 'Mobile login — sign in with email + password via Clerk',
+    description: 'Returns a Clerk JWT. Mobile clients store this token and pass it as Bearer on subsequent requests. Call GET /auth/me after login to obtain role and org context.',
+  })
+  @ApiCreatedResponse({ type: TokenResponse })
+  @HttpCode(HttpStatus.CREATED)
+  @AllowAnonymous()
+  @Post('login')
+  public async mobileLogin(@Body() body: MobileLoginRequest): Promise<TokenResponse> {
+    const query    = new GetDevTokenQuery();
+    query.email    = body.email;
+    query.password = body.password;
+    const token = await this.mediator.execute<GetDevTokenQuery, string>(query);
     return { token };
   }
 
@@ -114,7 +154,7 @@ export class AuthController {
     @CurrentUser() currentUser: AuthenticatedUser,
     @Body() body: OnboardOrganizationRequest,
   ): Promise<OnboardOrganizationResponse> {
-    if (!currentUser.isOnboarded) {
+    if (!currentUser.organizationId) {
       const syncCmd = new SyncUserCommand();
       syncCmd.clerkUserId = currentUser.clerkUserId;
       syncCmd.email = currentUser.email;
@@ -123,6 +163,7 @@ export class AuthController {
       syncCmd.imageUrl = currentUser.imageUrl;
       const syncedUser = await this.mediator.execute<SyncUserCommand, User>(syncCmd);
       currentUser.dbUserId = syncedUser.id;
+      currentUser.organizationId = syncedUser.organizationId;
     }
 
     const command = new OnboardOrganizationCommand();
@@ -143,29 +184,57 @@ export class AuthController {
     };
   }
 
-  // ── POST /auth/invite ────────────────────────────────────────────────────────
-  @ApiOperation({
-    summary: 'Invite a member to your organization',
-    description: 'OrgAdmin or SuperAdmin only. The invitee must have already signed up via Clerk.',
-  })
-  @ApiCreatedResponse({ type: InviteMemberResponse })
+  // ── GET /auth/dev/organizations ─────────────────────────────────────────────
+  @ApiOperation({ summary: 'List organizations for mobile staff signup (dev only)' })
+  @ApiOkResponse({ schema: { type: 'array', items: { properties: { id: { type: 'string' }, name: { type: 'string' } } } } })
+  @HttpCode(HttpStatus.OK)
+  @AllowAnonymous()
+  @Get('dev/organizations')
+  public async devOrganizations(): Promise<Array<{ id: string; name: string }>> {
+    if (!isDev() && !isLocal() && !isTest()) {
+      throw new ForbiddenException('Endpoint disabled outside development');
+    }
+    const query = new ListOrganizationsQuery();
+    const orgs = await this.mediator.execute<ListOrganizationsQuery, Organization[]>(query);
+    return orgs.map((org) => ({ id: org.id, name: org.name ?? '' }));
+  }
+
+  // ── GET /auth/dev/roles ─────────────────────────────────────────────────────
+  @ApiOperation({ summary: 'List picker and driver roles for mobile staff signup (dev only)' })
+  @ApiOkResponse({ schema: { type: 'array', items: { properties: { id: { type: 'string' }, name: { type: 'string' } } } } })
+  @HttpCode(HttpStatus.OK)
+  @AllowAnonymous()
+  @Get('dev/roles')
+  public async devRoles(): Promise<Array<{ id: string; name: string }>> {
+    if (!isDev() && !isLocal() && !isTest()) {
+      throw new ForbiddenException('Endpoint disabled outside development');
+    }
+    const query = new ListRolesQuery();
+    const roles = await this.mediator.execute<ListRolesQuery, Role[]>(query);
+    return roles
+      .filter((role) => role.name === 'picker' || role.name === 'driver')
+      .map((role) => ({ id: role.id, name: role.name }));
+  }
+
+  // ── POST /auth/mobile/register ───────────────────────────────────────────────
+  @ApiOperation({ summary: 'Register a picker/driver staff user in Clerk + DB (dev only)' })
+  @ApiCreatedResponse({ schema: { properties: { userId: { type: 'string' } } } })
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RolesGuard)
-  @Roles(ERole.OrgAdmin, ERole.SuperAdmin)
-  @Post('invite')
-  public async inviteMember(
-    @CurrentUser() currentUser: AuthenticatedUser,
-    @Body() body: InviteMemberRequest,
-  ): Promise<InviteMemberResponse> {
-    const command = new InviteMemberCommand();
-    command.organizationId = currentUser.organizationId;
-    command.invitedByUserId = currentUser.dbUserId;
-    command.email = body.email;
-    command.roleId = body.roleId;
-
-    const membership = await this.mediator.execute<InviteMemberCommand, any>(command);
-
-    return { membershipId: membership.id, status: membership.status };
+  @AllowAnonymous()
+  @Post('mobile/register')
+  public async mobileRegister(@Body() body: RegisterMobileUserRequest): Promise<{ userId: string }> {
+    if (!isDev() && !isLocal() && !isTest()) {
+      throw new ForbiddenException('Registration endpoint disabled outside development');
+    }
+    const command              = new RegisterMobileUserCommand();
+    command.firstName          = body.firstName;
+    command.lastName           = body.lastName;
+    command.email              = body.email;
+    command.password           = body.password;
+    command.organizationId     = body.organizationId;
+    command.roleId             = body.roleId;
+    const userId = await this.mediator.execute<RegisterMobileUserCommand, string>(command);
+    return { userId };
   }
 
   // ── GET /auth/me ─────────────────────────────────────────────────────────────
@@ -190,6 +259,8 @@ export class AuthController {
         isOnboarded: false,
         organization: undefined,
         membership: undefined,
+        locationIds: [],
+        hasOrgWideAccess: false,
       };
     }
 
@@ -228,6 +299,17 @@ export class AuthController {
       isOnboarded: true,
       organization: orgSummary,
       membership: membershipSummary,
+      locationIds: currentUser.locationIds ?? [],
+      hasOrgWideAccess: currentUser.hasOrgWideAccess ?? false,
+      currencyCode: resolveCurrencyCode(result.organization?.country),
     };
   }
+}
+
+function resolveCurrencyCode(country?: string): string {
+  const cc = (country ?? '').toLowerCase();
+  if (cc.includes('kenya') || cc === 'ke') return 'KES';
+  if (cc.includes('india') || cc === 'in') return 'INR';
+  if (cc.includes('united states') || cc === 'us' || cc === 'usa') return 'USD';
+  return 'KES';
 }

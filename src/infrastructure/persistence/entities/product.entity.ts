@@ -100,6 +100,16 @@ export class ProductEntity {
   @Column({ type: 'integer', default: 0 })
   public reorderPoint: number;
 
+  /** Brand / manufacturer name */
+  @AutoMap()
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  public manufacturer?: string;
+
+  /** Units per pack — conversion factor between pack UoM and base unit */
+  @AutoMap()
+  @Column({ name: 'pack_size', type: 'integer', nullable: true })
+  public packSize?: number;
+
   @AutoMap()
   @Column({ type: 'boolean', default: true })
   public isActive: boolean;

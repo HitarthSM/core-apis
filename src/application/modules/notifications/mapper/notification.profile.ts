@@ -1,9 +1,15 @@
 import { createMap, Mapper } from '@automapper/core';
 import { AutomapperProfile, InjectMapper } from '@automapper/nestjs';
 import { Injectable } from '@nestjs/common';
-import { NotificationEntity } from '../../../../infrastructure/persistence/entities';
-import { Notification } from '../domain';
-import { CreateNotificationRequest, SearchNotificationsRequest, ListNotificationsRequest, NotificationResponse, UpdateNotificationRequest } from '../models';
+import { NotificationEntity, UserDeviceTokenEntity } from '../../../../infrastructure/persistence/entities';
+import { Notification, UserDeviceToken } from '../domain';
+import {
+  CreateNotificationRequest,
+  SearchNotificationsRequest,
+  ListNotificationsRequest,
+  NotificationResponse,
+  UpdateNotificationRequest,
+} from '../models';
 import { CreateNotificationCommand, UpdateNotificationCommand } from '../commands';
 import { SearchNotificationsQuery, ListNotificationsQuery } from '../queries';
 
@@ -16,7 +22,8 @@ export class NotificationProfile extends AutomapperProfile {
       createMap(mapper, NotificationEntity, Notification);
       createMap(mapper, Notification, NotificationEntity);
       createMap(mapper, Notification, NotificationResponse);
-      
+      createMap(mapper, UserDeviceTokenEntity, UserDeviceToken);
+
       createMap(mapper, CreateNotificationRequest, CreateNotificationCommand);
       createMap(mapper, UpdateNotificationRequest, UpdateNotificationCommand);
       createMap(mapper, SearchNotificationsRequest, SearchNotificationsQuery);

@@ -34,14 +34,22 @@ export interface ClerkOrganizationData {
   slug: string;
 }
 
+export interface InviteMetadata {
+  organizationId: string;
+  roleId: string;
+  locationId?: string;
+}
+
 export interface IClerkService {
   getTokenForUser(userId: string): Promise<string>;
+  signInWithEmailPasswordAsync(email: string, password: string): Promise<string>;
+  createUserAsync(params: { email: string; password: string; firstName: string; lastName: string }): Promise<string>;
   listUsersAsync(params?: { limit?: number; offset?: number; organizationId?: string }): Promise<ClerkUserListData>;
   searchUsersAsync(params: { query: string; limit?: number; offset?: number }): Promise<ClerkUserListData>;
   getClerkUserAsync(clerkUserId: string): Promise<ClerkUserData>;
   getUserRolesAsync(clerkUserId: string): Promise<string[]>;
   updateUserRolesAsync(clerkUserId: string, roles: string[]): Promise<void>;
-  inviteUserAsync(params: { email: string; roles?: string[]; redirectUrl?: string }): Promise<void>;
+  inviteUserAsync(params: { email: string; roles?: string[]; redirectUrl?: string; organizationId?: string; roleId?: string; locationId?: string }): Promise<void>;
   listInvitationsAsync(params?: { status?: EInvitationStatus }): Promise<ClerkInvitationData[]>;
   revokeInvitationAsync(invitationId: string): Promise<void>;
   deleteClerkUserAsync(clerkUserId: string): Promise<void>;
@@ -50,4 +58,5 @@ export interface IClerkService {
   assignToOrganizationAsync(params: { clerkUserId: string; organizationId: string; role: string }): Promise<void>;
   removeFromOrganizationAsync(params: { clerkUserId: string; organizationId: string }): Promise<void>;
   listOrganizationsAsync(): Promise<ClerkOrganizationData[]>;
+  getInviteMetadataAsync(clerkUserId: string): Promise<InviteMetadata | undefined>;
 }

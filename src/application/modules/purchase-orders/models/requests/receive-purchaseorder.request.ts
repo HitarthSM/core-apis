@@ -8,8 +8,6 @@ export class ReceivePurchaseOrderItemRequest {
 }
 
 export class ReceivePurchaseOrderRequest {
-  @ApiProperty() @IsNotEmpty() @IsUUID() public locationId: string;
-
   @ApiProperty({ type: [ReceivePurchaseOrderItemRequest] })
   @IsArray()
   @ValidateNested({ each: true })

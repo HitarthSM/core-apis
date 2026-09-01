@@ -12,6 +12,9 @@ export class Inventory {
   @AutoMap() public averageCost?: number;
   @AutoMap() public binLocation?: string;
   @AutoMap() public quantityUnpublished: number;
+  @AutoMap() public productPackSize?: number;
+  @AutoMap() public packsOnHand?: number;
+  @AutoMap() public looseUnits?: number;
   @AutoMap(() => Date) public createdAt?: Date;
   @AutoMap(() => Date) public updatedAt?: Date;
 }

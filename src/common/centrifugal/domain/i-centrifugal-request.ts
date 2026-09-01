@@ -200,7 +200,7 @@ export interface HmsPushNotification {
   message?: object;
 }
 
-export interface InfoRequest {}
+export type InfoRequest = Record<string, never>;
 
 export interface InvalidateUserTokensRequest {
   expire_at?: number;

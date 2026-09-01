@@ -2,9 +2,11 @@ import { Inject } from '@nestjs/common';
 import type { IQueryHandler } from '@nestjs/cqrs';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { QueryHandlerStrict } from '../../../../../common';
-import { BILL_REPO } from '../../../../constants';
+import { BILL_REPO, ORGANIZATION_REPO } from '../../../../constants';
 import { IBillRepo } from '../..';
-import { PDF_EXPORT_SERVICE, IPdfExportService, PdfDocument } from '../../../../../common/pdf-export';
+import { PDF_EXPORT_SERVICE, IPdfExportService, PdfDocument } from '../../../../../common';
+import { IOrganizationRepo } from '../../../organizations/i-organization.repo';
+import { Organization } from '../../../organizations/domain';
 import { ExportBillQuery } from './export-bill.query';
 import { Bill, BillItem } from '../../domain';
 
@@ -12,6 +14,7 @@ import { Bill, BillItem } from '../../domain';
 export class ExportBillQueryHandler implements IQueryHandler<ExportBillQuery, PdfDocument> {
   constructor(
     @Inject(BILL_REPO) private readonly billRepo: IBillRepo,
+    @Inject(ORGANIZATION_REPO) private readonly organizationRepo: IOrganizationRepo,
     @Inject(PDF_EXPORT_SERVICE) private readonly pdfService: IPdfExportService,
     @InjectPinoLogger(ExportBillQueryHandler.name) private readonly logger: PinoLogger,
   ) {}
@@ -20,17 +23,28 @@ export class ExportBillQueryHandler implements IQueryHandler<ExportBillQuery, Pd
     this.logger.info(`Executing Query "${ExportBillQuery.name}"`);
 
     const bill: Bill = await this.billRepo.getAsync(query.id);
-    const context = this.buildContext(bill);
+    const organization = await this.organizationRepo.getAsync(bill.organizationId);
+    const context = this.buildContext(bill, organization);
     const filename = `bill-${bill.billNumber}.pdf`;
 
     return this.pdfService.generateFromTemplateAsync('bill', context, filename);
   }
 
-  private buildContext(bill: Bill): Record<string, unknown> {
+  private buildContext(
+    bill: Bill,
+    organization: Organization | null | undefined,
+  ): Record<string, unknown> {
+    const orgMeta = [organization?.email, organization?.phone, organization?.country]
+      .filter(Boolean)
+      .join(' · ');
+
     return {
-      organizationName: 'Organization',
-      organizationAddress: '',
-      organizationEmail: '',
+      orgName: organization?.name ?? 'Organization',
+      orgPhone: organization?.phone ?? '',
+      orgAddress: organization?.country ?? '',
+      orgEmail: organization?.email ?? '',
+      orgMeta,
+      logoUrl: organization?.logoUrl ?? '',
       billNumber: bill.billNumber,
       status: bill.status,
       customerName: bill.walkInName ?? `Customer (${bill.customerId ?? 'Walk-in'})`,
@@ -60,6 +74,8 @@ export class ExportBillQueryHandler implements IQueryHandler<ExportBillQuery, Pd
       totalAmount: this.formatCurrency(bill.totalAmount),
       paymentMethod: bill.paymentMethod ?? '',
       notes: bill.notes ?? '',
+      generatedAt: new Date().toLocaleString('en-IN'),
+      organizationName: organization?.name ?? 'Organization',
     };
   }
 

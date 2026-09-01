@@ -9,7 +9,7 @@ export class ReportGenerationLogFeatureOptions {
   constructor(page?: number, perPage?: number, orderBy?: string, order?: EOrder) {
     this.page = page ?? 1;
     this.perPage = perPage ?? 20;
-    this.orderBy = orderBy ?? 'id';
+    this.orderBy = orderBy ?? 'createdAt';
     this.order = order ?? EOrder.Desc;
   }
 }

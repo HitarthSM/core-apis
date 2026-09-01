@@ -18,6 +18,8 @@ export enum ERole {
   OrgManager   = 'org_manager',
   StoreManager = 'store_manager',
   StoreStaff   = 'store_staff',
+  Picker       = 'picker',
+  Driver       = 'driver',
 }
 
 @Entity({ schema: CORE_SCHEMA, name: ECoreTableName.Roles })

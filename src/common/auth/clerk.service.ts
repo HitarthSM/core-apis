@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { createClerkClient } from '@clerk/backend';
 import { ICoreApiConfig } from '../../configuration';
 import { EInvitationStatus } from '../../infrastructure/e-invitation-status';
-import { ClerkInvitationData, ClerkOrganizationData, ClerkUserData, ClerkUserListData, IClerkService } from './i-clerk.service';
+import { ClerkInvitationData, ClerkOrganizationData, ClerkUserData, ClerkUserListData, IClerkService, InviteMetadata } from './i-clerk.service';
+import { parseInviteMetadata } from './invite-metadata';
 
 @Injectable()
 export class ClerkService implements IClerkService {
@@ -12,6 +13,26 @@ export class ClerkService implements IClerkService {
   constructor(config: ConfigService<ICoreApiConfig>) {
     const clerkCfg = config.get<ICoreApiConfig['clerk']>('clerk');
     this.client = createClerkClient({ secretKey: clerkCfg.secretKey });
+  }
+
+  public async createUserAsync(params: { email: string; password: string; firstName: string; lastName: string }): Promise<string> {
+    const user = await this.client.users.createUser({
+      emailAddress: [params.email],
+      password: params.password,
+      firstName: params.firstName,
+      lastName: params.lastName,
+    });
+    return user.id;
+  }
+
+  public async signInWithEmailPasswordAsync(email: string, password: string): Promise<string> {
+    const users = await this.client.users.getUserList({ emailAddress: [email] });
+    if (!users.data.length) throw new NotFoundException(`No user found with email ${email}`);
+    const user = users.data[0];
+    await this.client.users.verifyPassword({ userId: user.id, password });
+    const session = await this.client.sessions.createSession({ userId: user.id });
+    const tokenResult = await this.client.sessions.getToken(session.id);
+    return tokenResult.jwt;
   }
 
   public async getTokenForUser(userId: string): Promise<string> {
@@ -64,11 +85,20 @@ export class ClerkService implements IClerkService {
     });
   }
 
-  public async inviteUserAsync(params: { email: string; roles?: string[]; redirectUrl?: string }): Promise<void> {
+  public async inviteUserAsync(params: { email: string; roles?: string[]; redirectUrl?: string; organizationId?: string; roleId?: string; locationId?: string }): Promise<void> {
+    const publicMetadata: Record<string, unknown> = {};
+    if (params.roles?.length) publicMetadata['roles'] = params.roles;
+    if (params.organizationId && params.roleId) {
+      publicMetadata['invite'] = {
+        organizationId: params.organizationId,
+        roleId:         params.roleId,
+        locationId:     params.locationId,
+      };
+    }
     await this.client.invitations.createInvitation({
       emailAddress:   params.email,
       redirectUrl:    params.redirectUrl,
-      publicMetadata: params.roles?.length ? { roles: params.roles } : undefined,
+      publicMetadata: Object.keys(publicMetadata).length ? publicMetadata : undefined,
       ignoreExisting: true,
     });
   }
@@ -129,6 +159,29 @@ export class ClerkService implements IClerkService {
       name:           org.name,
       slug:           org.slug,
     }));
+  }
+
+  public async getInviteMetadataAsync(clerkUserId: string): Promise<InviteMetadata | undefined> {
+    const user = await this.client.users.getUser(clerkUserId);
+    const fromUser = parseInviteMetadata(user.publicMetadata);
+    if (fromUser) return fromUser;
+
+    const email =
+      user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress ??
+      user.emailAddresses[0]?.emailAddress;
+    if (!email) return undefined;
+
+    for (const status of [EInvitationStatus.Accepted, EInvitationStatus.Pending]) {
+      const result = await this.client.invitations.getInvitationList({ status, limit: 100 });
+      const matches = result.data
+        .filter((inv) => inv.emailAddress.toLowerCase() === email.toLowerCase())
+        .sort((a, b) => b.createdAt - a.createdAt);
+      for (const match of matches) {
+        const parsed = parseInviteMetadata(match.publicMetadata);
+        if (parsed) return parsed;
+      }
+    }
+    return undefined;
   }
 
   private mapUser(user: Awaited<ReturnType<(typeof this.client.users)['getUser']>>): ClerkUserData {

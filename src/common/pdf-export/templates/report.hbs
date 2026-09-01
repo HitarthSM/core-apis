@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <style>
+    *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #1e293b; font-size: 13px; }
+
+    .header { background: linear-gradient(135deg, #1a56db 0%, #0e3fa8 100%); padding: 32px 40px 28px; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .org-name { font-size: 22px; font-weight: 800; color: #fff; }
+    .report-label { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .report-title { color: #fff; font-weight: 700; font-size: 16px; text-align: right; }
+    .gen-ts { color: rgba(255,255,255,.65); font-size: 11px; margin-top: 4px; text-align: right; }
+    .meta-chips { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+    .chip { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: rgba(255,255,255,.9); }
+
+    .body { padding: 32px 40px; }
+
+    .metric-card { background: linear-gradient(135deg, #f0f7ff 0%, #e8f2ff 100%); border: 1px solid #bfdbfe; border-radius: 12px; padding: 24px 28px; margin-bottom: 28px; display: flex; align-items: center; gap: 20px; }
+    .metric-icon { width: 56px; height: 56px; border-radius: 12px; background: #1a56db; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+    .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #3b82f6; margin-bottom: 6px; font-weight: 700; }
+    .metric-value { font-size: 36px; font-weight: 800; color: #0f172a; line-height: 1; }
+    .metric-desc { font-size: 12px; color: #64748b; margin-top: 8px; }
+
+    .section { margin-bottom: 28px; }
+    .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead tr { background: #1a56db; }
+    thead th { padding: 10px 14px; text-align: left; font-weight: 700; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody td { padding: 10px 14px; color: #374151; border-bottom: 1px solid #f1f5f9; }
+    tbody tr:last-child td { border-bottom: none; }
+    .text-right { text-align: right; }
+
+    .note-box { background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 14px 18px; margin-bottom: 20px; font-size: 12px; color: #78350f; }
+    .empty { background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 8px; padding: 32px; text-align: center; color: #94a3b8; }
+
+    .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; }
+
+    @media print {
+      body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="org-name">ERP Suite</div>
+        <div class="report-label">Business Intelligence Report</div>
+      </div>
+      <div>
+        <div class="report-title">{{title}}</div>
+        <div class="gen-ts">Generated {{generatedAt}}</div>
+      </div>
+    </div>
+    <div class="meta-chips">
+      {{#if reportPeriod}}<span class="chip">📅 {{reportPeriod}}</span>{{/if}}
+      {{#if fromDateLabel}}<span class="chip">From: {{fromDateLabel}}</span>{{/if}}
+      {{#if toDateLabel}}<span class="chip">To: {{toDateLabel}}</span>{{/if}}
+    </div>
+  </div>
+
+  <div class="body">
+
+    {{#if description}}
+    <p style="font-size:13px;color:#64748b;margin-bottom:24px;line-height:1.6;">{{description}}</p>
+    {{/if}}
+
+    {{#if note}}
+    <div class="note-box">ℹ️ {{note}}</div>
+    {{/if}}
+
+    {{#if formattedValue}}
+    <div class="metric-card">
+      <div class="metric-icon">📊</div>
+      <div>
+        <div class="metric-label">{{title}}</div>
+        <div class="metric-value">{{formattedValue}}</div>
+        <div class="metric-desc">{{description}}</div>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if summaryCards}}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;">
+      {{#each summaryCards}}
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px 20px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#64748b;margin-bottom:6px;">{{this.label}}</div>
+        <div style="font-size:24px;font-weight:800;color:#0f172a;">{{this.value}}</div>
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+
+    {{#if tableHeaders}}
+    <div class="section">
+      <div class="section-title">Detailed Data</div>
+      {{#if tableRows.length}}
+      <table>
+        <thead>
+          <tr>
+            {{#each tableHeaders}}
+            <th>{{this}}</th>
+            {{/each}}
+          </tr>
+        </thead>
+        <tbody>
+          {{#each tableRows}}
+          <tr>
+            {{#each this}}
+            <td>{{this}}</td>
+            {{/each}}
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+      {{else}}
+      <div class="empty">No data found for the selected period.</div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    <div class="footer">
+      <span>ERP Suite — Confidential Business Report</span>
+      <span>{{generatedAt}}</span>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -39,6 +39,8 @@ import { DriversModule } from './modules/drivers';
 import { MaintenanceModule } from './modules/maintenance';
 import { TripsModule } from './modules/trips';
 import { VehicleExpensesModule } from './modules/vehicle-expenses';
+import { OrderOperationsModule } from './modules/order-operations';
+import { TripOperationsModule } from './modules/trip-operations';
 
 import { CqrsMediator, CommonModule } from '../common';
 import { MailTemplatesModule } from './modules/mail-templates';
@@ -90,6 +92,8 @@ export class ApplicationModule {
         MaintenanceModule,
         TripsModule,
         VehicleExpensesModule,
+        OrderOperationsModule,
+        TripOperationsModule,
         CommonModule,
         MailTemplatesModule,
       ],

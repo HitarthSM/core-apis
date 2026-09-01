@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ERP — Mobile Staff Signup</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .page-header h1 { font-size: 1.6rem; font-weight: 700; color: #1a1a2e; }
+    .page-header p { margin-top: 6px; color: #555; font-size: 0.9rem; }
+    .dev-badge {
+      display: inline-block;
+      background: #f59e0b;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* ── API config bar ────────────────────────────────────────────────── */
+    .api-bar {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 28px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .api-bar label { font-size: 0.8rem; font-weight: 600; color: #475569; white-space: nowrap; }
+    .api-bar input {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.83rem;
+      color: #334155;
+      outline: none;
+    }
+    .api-bar input:focus { border-color: #6366f1; }
+    .api-bar button {
+      padding: 6px 14px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .api-bar button:hover { background: #4f46e5; }
+
+    /* ── Form ────────────────────────────────────────────────────────────── */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .field { margin-bottom: 18px; }
+    .field label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+    }
+    .field input, .field select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #111827;
+      outline: none;
+      transition: border-color 0.15s;
+      background: #fff;
+    }
+    .field input:focus, .field select:focus { border-color: #6366f1; }
+    .field input::placeholder { color: #9ca3af; }
+    .field select:disabled, .field input:disabled { background: #f3f4f6; cursor: not-allowed; }
+
+    .field .hint {
+      margin-top: 4px;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .role-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .role-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      text-align: center;
+    }
+    .role-card:hover { border-color: #a5b4fc; background: #f5f3ff; }
+    .role-card.selected { border-color: #6366f1; background: #eef2ff; }
+    .role-card input[type="radio"] { display: none; }
+    .role-card .role-icon { font-size: 2rem; margin-bottom: 6px; }
+    .role-card .role-name { font-weight: 700; font-size: 0.9rem; color: #1e1b4b; }
+    .role-card .role-desc { font-size: 0.74rem; color: #6b7280; margin-top: 3px; }
+
+    .divider { border: none; border-top: 1px solid #f0f0f0; margin: 8px 0 20px; }
+
+    /* ── Submit button ───────────────────────────────────────────────────── */
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-submit:hover { background: #4f46e5; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Alerts ────────────────────────────────────────────────────────── */
+    .alert {
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .alert.show { display: block; }
+    .alert-error   { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+    .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+    .alert-info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+
+    .alert-success strong { display: block; margin-bottom: 4px; }
+    .alert-success code {
+      background: #dcfce7;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      word-break: break-all;
+    }
+
+    /* ── Spinner ─────────────────────────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="dev-badge">Dev Tool</div>
+  <h1>Mobile Staff Signup</h1>
+  <p>Creates a Picker or Driver user in Clerk + DB so they can sign in on the mobile app.</p>
+</div>
+
+<div class="card">
+
+  <!-- API base URL config -->
+  <div class="api-bar">
+    <label for="apiBase">API</label>
+    <input id="apiBase" type="text" value="http://localhost:3000" placeholder="https://core-apis-m03n.onrender.com" />
+    <button onclick="loadDropdowns()">Load</button>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert alert-info" id="alertInfo"></div>
+  <div class="alert alert-error" id="alertError"></div>
+  <div class="alert alert-success" id="alertSuccess"></div>
+
+  <form id="signupForm" onsubmit="handleSubmit(event)" novalidate>
+
+    <!-- Name row -->
+    <div class="form-row">
+      <div class="field">
+        <label for="firstName">First Name</label>
+        <input id="firstName" type="text" placeholder="John" required />
+      </div>
+      <div class="field">
+        <label for="lastName">Last Name</label>
+        <input id="lastName" type="text" placeholder="Doe" required />
+      </div>
+    </div>
+
+    <!-- Email + Password -->
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="john@example.com" required />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="min 8 characters" minlength="8" required />
+      <div class="hint">User will log in with this email + password on the mobile app.</div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Organization -->
+    <div class="field">
+      <label for="orgSelect">Organization</label>
+      <select id="orgSelect" required>
+        <option value="">— click Load above first —</option>
+      </select>
+    </div>
+
+    <!-- Role cards -->
+    <div class="field">
+      <label>Role</label>
+      <div class="role-cards" id="roleCards">
+        <div class="role-card" onclick="selectRole(this, 'loading')">
+          <div class="role-icon">⏳</div>
+          <div class="role-name">Loading…</div>
+          <div class="role-desc">Click Load above</div>
+          <input type="radio" name="role" value="" />
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit" id="submitBtn">
+      <div class="spinner" id="spinner"></div>
+      <span id="submitLabel">Create Staff User</span>
+    </button>
+
+  </form>
+</div>
+
+<script>
+  const ROLE_ICONS = { picker: '📦', driver: '🚚' };
+  const ROLE_DESCS = {
+    picker: 'Claims and packs orders in the warehouse',
+    driver: 'Manages delivery trips and confirms drop-offs',
+  };
+
+  let selectedRoleId = null;
+
+  function apiBase() {
+    return document.getElementById('apiBase').value.replace(/\/$/, '');
+  }
+
+  function showAlert(type, html) {
+    ['Info','Error','Success'].forEach((t) => {
+      const el = document.getElementById('alert' + t);
+      el.classList.remove('show');
+      el.innerHTML = '';
+    });
+    if (type && html) {
+      const el = document.getElementById('alert' + type);
+      el.innerHTML = html;
+      el.classList.add('show');
+    }
+  }
+
+  async function loadDropdowns() {
+    showAlert('Info', 'Loading organizations and roles…');
+    try {
+      const base = apiBase();
+      const [orgsRes, rolesRes] = await Promise.all([
+        fetch(`${base}/api/v1/auth/dev/organizations`),
+        fetch(`${base}/api/v1/auth/dev/roles`),
+      ]);
+
+      if (!orgsRes.ok) throw new Error(`Organizations: ${orgsRes.status} ${orgsRes.statusText}`);
+      if (!rolesRes.ok) throw new Error(`Roles: ${rolesRes.status} ${rolesRes.statusText}`);
+
+      const orgs  = await orgsRes.json();
+      const roles = await rolesRes.json();
+
+      // Populate org dropdown
+      const orgSelect = document.getElementById('orgSelect');
+      orgSelect.innerHTML = '<option value="">— select organization —</option>';
+      orgs.forEach((org) => {
+        const opt = document.createElement('option');
+        opt.value = org.id;
+        opt.textContent = org.name;
+        orgSelect.appendChild(opt);
+      });
+
+      // Populate role cards
+      const roleCards = document.getElementById('roleCards');
+      roleCards.innerHTML = '';
+      selectedRoleId = null;
+
+      if (roles.length === 0) {
+        roleCards.innerHTML = '<div style="color:#b91c1c;font-size:0.85rem">No picker/driver roles found. Check DB seeds.</div>';
+      } else {
+        roles.forEach((role) => {
+          const card = document.createElement('div');
+          card.className = 'role-card';
+          card.dataset.roleId = role.id;
+          card.innerHTML = `
+            <div class="role-icon">${ROLE_ICONS[role.name] ?? '👤'}</div>
+            <div class="role-name">${capitalize(role.name)}</div>
+            <div class="role-desc">${ROLE_DESCS[role.name] ?? ''}</div>
+            <input type="radio" name="role" value="${role.id}" />
+          `;
+          card.addEventListener('click', () => selectRole(card, role.id));
+          roleCards.appendChild(card);
+        });
+      }
+
+      showAlert('Info', `Loaded <strong>${orgs.length}</strong> organizations and <strong>${roles.length}</strong> roles.`);
+    } catch (err) {
+      showAlert('Error', `Failed to load: ${err.message}. Make sure the API is running and the URL is correct.`);
+    }
+  }
+
+  function selectRole(card, roleId) {
+    document.querySelectorAll('.role-card').forEach((el) => el.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedRoleId = roleId;
+    const radio = card.querySelector('input[type="radio"]');
+    if (radio) radio.checked = true;
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    showAlert(null, null);
+
+    const firstName    = document.getElementById('firstName').value.trim();
+    const lastName     = document.getElementById('lastName').value.trim();
+    const email        = document.getElementById('email').value.trim();
+    const password     = document.getElementById('password').value;
+    const organizationId = document.getElementById('orgSelect').value;
+
+    if (!firstName || !lastName || !email || !password) {
+      return showAlert('Error', 'Please fill in all fields.');
+    }
+    if (password.length < 8) {
+      return showAlert('Error', 'Password must be at least 8 characters.');
+    }
+    if (!organizationId) {
+      return showAlert('Error', 'Please select an organization.');
+    }
+    if (!selectedRoleId) {
+      return showAlert('Error', 'Please select a role (Picker or Driver).');
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${apiBase()}/api/v1/auth/mobile/register`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ firstName, lastName, email, password, organizationId, roleId: selectedRoleId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg = data?.message ?? data?.error ?? `HTTP ${res.status}`;
+        throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+      }
+
+      showAlert('Success', `
+        <strong>✅ User created successfully!</strong>
+        <div style="margin-top:6px">
+          <span style="color:#166534">Email:</span> <code>${email}</code><br/>
+          <span style="color:#166534">User ID:</span> <code>${data.userId}</code>
+        </div>
+        <div style="margin-top:10px;font-size:0.8rem;color:#166534">
+          The user can now sign in on the mobile app with their email and password.
+          Their role and org are already assigned — no further steps needed.
+        </div>
+      `);
+
+      document.getElementById('signupForm').reset();
+      document.querySelectorAll('.role-card').forEach((el) => el.classList.remove('selected'));
+      selectedRoleId = null;
+
+    } catch (err) {
+      showAlert('Error', `Registration failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function setLoading(loading) {
+    const btn     = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    const label   = document.getElementById('submitLabel');
+    btn.disabled         = loading;
+    spinner.style.display = loading ? 'block' : 'none';
+    label.textContent     = loading ? 'Creating user…' : 'Create Staff User';
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  // Auto-load on page open
+  window.addEventListener('DOMContentLoaded', loadDropdowns);
+</script>
+</body>
+</html>

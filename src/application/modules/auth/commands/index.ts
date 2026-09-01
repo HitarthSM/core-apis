@@ -1,13 +1,13 @@
 import { SyncUserCommandHandler } from './sync-user';
 import { OnboardOrganizationCommandHandler } from './onboard-organization';
-import { InviteMemberCommandHandler } from './invite-member';
+import { RegisterMobileUserCommandHandler } from './register-mobile-user';
 
 export * from './sync-user';
 export * from './onboard-organization';
-export * from './invite-member';
+export * from './register-mobile-user';
 
 export const AuthCommandHandlers = [
   SyncUserCommandHandler,
   OnboardOrganizationCommandHandler,
-  InviteMemberCommandHandler,
+  RegisterMobileUserCommandHandler,
 ];

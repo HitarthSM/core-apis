@@ -45,6 +45,22 @@ export class OrderEntity {
   @Column({ name: 'payment_status', type: 'varchar', length: 50, default: 'UNPAID' })
   public paymentStatus: string;
 
+  @AutoMap()
+  @Column({ name: 'claimed_by_user_id', type: 'uuid', nullable: true })
+  public claimedByUserId?: string;
+
+  @AutoMap(() => Date)
+  @Column({ name: 'claimed_at', type: 'timestamp', nullable: true })
+  public claimedAt?: Date;
+
+  @AutoMap()
+  @Column({ name: 'packed_by_user_id', type: 'uuid', nullable: true })
+  public packedByUserId?: string;
+
+  @AutoMap(() => Date)
+  @Column({ name: 'packed_at', type: 'timestamp', nullable: true })
+  public packedAt?: Date;
+
   @AutoMap(() => Date)
   @CreateDateColumn({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt: Date;

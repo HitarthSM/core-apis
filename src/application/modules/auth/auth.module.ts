@@ -7,15 +7,14 @@ import { AuthController } from './auth.controller';
 import { AuthCommandHandlers } from './commands';
 import { AuthQueryHandlers } from './queries';
 import { AuthProfile } from './mapper';
-import { ClerkJwtStrategy, ClerkService, RolesGuard, CLERK_STRATEGY } from '../../../common';
-import { MailOptions } from '../../../common/mail';
+import { ClerkJwtStrategy, ClerkService, RolesGuard, CLERK_STRATEGY, CLERK_SERVICE } from '../../../common';
+import { MailOptions } from '../../../common';
 import { ICoreApiConfig } from '../../../configuration';
 import {
   UserEntity,
   UserRoleEntity,
   OrgMemberEntity,
   RoleEntity,
-  OrganizationEntity,
 } from '../../../infrastructure/persistence/entities';
 import { AuthMailService } from './mail';
 
@@ -28,7 +27,6 @@ import { AuthMailService } from './mail';
       UserRoleEntity,
       OrgMemberEntity,
       RoleEntity,
-      OrganizationEntity,
     ]),
   ],
   controllers: [AuthController],
@@ -44,6 +42,7 @@ import { AuthMailService } from './mail';
     AuthMailService,
     ClerkJwtStrategy,
     ClerkService,
+    { provide: CLERK_SERVICE, useExisting: ClerkService },
     RolesGuard,
     AuthProfile,
     ...AuthCommandHandlers,

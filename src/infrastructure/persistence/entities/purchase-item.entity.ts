@@ -38,6 +38,11 @@ export class PurchaseItemEntity {
   @Column({ type: 'decimal', precision: 18, scale: 4, default: 0 })
   public quantityReceived: number;
 
+  /** Quantity allocated to specific locations so far */
+  @AutoMap()
+  @Column({ type: 'decimal', precision: 18, scale: 4, default: 0 })
+  public quantityAllocated: number;
+
   /** Agreed unit cost at time of order */
   @AutoMap()
   @Column({ type: 'decimal', precision: 18, scale: 4 })
@@ -47,6 +52,16 @@ export class PurchaseItemEntity {
   @AutoMap()
   @Column({ type: 'decimal', precision: 18, scale: 4, default: 0 })
   public totalCost: number;
+
+  /** Quantity expressed in packs; null when entered in raw units */
+  @AutoMap()
+  @Column({ name: 'pack_quantity', type: 'decimal', precision: 18, scale: 4, nullable: true })
+  public packQuantity?: number;
+
+  /** Product packSize snapshotted at time of PO for historical accuracy */
+  @AutoMap()
+  @Column({ name: 'pack_size_snapshot', type: 'integer', nullable: true })
+  public packSizeSnapshot?: number;
 
   @AutoMap(() => Date)
   @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
